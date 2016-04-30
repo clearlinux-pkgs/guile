@@ -4,7 +4,7 @@
 #
 Name     : guile
 Version  : 2.0.11
-Release  : 5
+Release  : 6
 URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.0.11.tar.gz
 Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.0.11.tar.gz
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
