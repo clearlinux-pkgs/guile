@@ -4,7 +4,7 @@
 #
 Name     : guile
 Version  : 2.0.11
-Release  : 7
+Release  : 8
 URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.0.11.tar.gz
 Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.0.11.tar.gz
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
@@ -54,6 +54,7 @@ Group: Development
 Requires: guile-lib
 Requires: guile-bin
 Requires: guile-data
+Provides: guile-devel
 
 %description dev
 dev components for the guile package.
@@ -84,9 +85,10 @@ lib components for the guile package.
 make V=1  %{?_smp_mflags}
 
 %check
+export LANG=C
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
-export no_proxy=intel.com,localhost
+export no_proxy=localhost
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
@@ -779,4 +781,5 @@ rm -rf %{buildroot}
 
 %files lib
 %defattr(-,root,root,-)
+%exclude /usr/lib64/libguile-2.0.so.22.7.2-gdb.scm
 /usr/lib64/*.so.*
