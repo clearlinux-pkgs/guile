@@ -1,10 +1,200 @@
 Guile NEWS --- history of user-visible changes.
-Copyright (C) 1996-2014 Free Software Foundation, Inc.
+Copyright (C) 1996-2016 Free Software Foundation, Inc.
 See the end for copying conditions.
 
 Please send Guile bug reports to bug-guile@gnu.org.
 
+
+Changes in 2.0.12 (since 2.0.11):
 
+* Notable changes
+
+** FFI: Add support for functions that set 'errno'
+
+When accessing POSIX functions from a system's libc via Guile's dynamic
+FFI, you commonly want to access the 'errno' variable to be able to
+produce useful diagnostic messages.
+
+This is now possible using 'pointer->procedure' or
+'scm_pointer_to_procedure_with_errno'.  See "Dynamic FFI" in the manual.
+
+** The #!r6rs directive now influences read syntax
+
+The #!r6rs directive now changes the per-port reader options to make
+Guile's reader conform more closely to the R6RS syntax.  In particular:
+
+  - It makes the reader case sensitive.
+  - It disables the recognition of keyword syntax in conflict with the
+    R6RS (and R5RS).
+  - It enables the `square-brackets', `hungry-eol-escapes' and
+    `r6rs-hex-escapes' reader options.
+
+** 'read' now accepts "\(" as equivalent to "("
+
+This is indented for use at the beginning of lines in multi-line strings
+to avoid confusing Emacs' lisp modes.  Previously "\(" was an error.
+
+** SRFI-14 character data set upgraded to Unicode 8.0.0
+
+** SRFI-19 table of leap seconds updated
+
+** 'string-hash', 'read-string', and 'write' have been optimized
+
+** GOOPS bug fix for inherited accessor methods
+
+In the port of GOOPS to Guile 2.0, we introduced a bug related to
+accessor methods.  The bug resulted in GOOPS assuming that a slot S in
+an object whose class is C would always be present in instances of all
+subclasses C, and allocated to the same struct index.  This is not the
+case for multiple inheritance.  This behavior has been fixed to be as it
+was in 1.8.
+
+One aspect of this change may cause confusion among users.  Previously
+if you defined a class C:
+
+  (use-modules (oop goops))
+  (define-class C ()
+    (a #:getter get-a))
+
+And now you define a subclass, intending to provide an #:init-value for
+the slot A:
+
+  (define-class D ()
+    (a #:init-value 42))
+
+Really what you have done is define in D a new slot with the same name,
+overriding the existing slot.  The problem comes in that before fixing
+this bug (but not in 1.8), the getter 'get-a' would succeed for
+instances of D, even though 'get-a' should only work for the slot 'a'
+that is defined on class C, not any other slot that happens to have the
+same name and be in a class with C as a superclass.
+
+It would be possible to "merge" the slot definitions on C and D, but
+that part of the meta-object protocol (`compute-slots' et al) is not
+fully implemented.
+
+Somewhat relatedly, GOOPS also had a fix around #:init-value on
+class-allocated slots.  GOOPS was re-initializing the value of slots
+with #:class or #:each-subclass allocation every time instances of that
+class was allocated.  This has been fixed.
+
+* New interfaces
+
+** New SRFI-28 string formatting implementation
+
+See "SRFI-28" in the manual.
+
+** New (ice-9 unicode) module
+
+See "Characters" in the manual.
+
+** Web server
+
+The (web server) module now exports 'make-server-impl', 'server-impl?',
+and related procedures.  Likewise, (web server http) exports 'http'.
+
+** New procedures: 'string-utf8-length' and 'scm_c_string_utf8_length'
+
+See "Bytevectors as Strings" in the manual, for more.
+
+** New 'EXIT_SUCCESS' and 'EXIT_FAILURE' Scheme variables
+
+See "Processes" in the manual.
+
+** New C functions to disable automatic SMOB finalization
+
+The new 'scm_set_automatic_finalization_enabled' C function allows you
+to choose whether automatic object finalization should be enabled (as
+was the case until now, and still is by default.)  This is meant for
+applications that are not thread-safe nor async-safe; such applications
+can disable automatic finalization and call the new 'scm_run_finalizers'
+function when appropriate.
+
+See the "Garbage Collecting Smobs" and "Smobs" sections in the manual.
+
+** Cross-compilation to ARM
+
+More ARM cross-compilation targets are supported: "arm.*eb",
+"^aarch64.*be", and "aarch64".
+
+* New deprecation
+
+** The undocumented and unused C function 'scm_string_hash' is now deprecated
+
+* Bugs fixed
+
+** Compiler
+*** 'call-with-prompt' does not truncate multiple-value returns
+    (<http://bugs.gnu.org/14347>)
+*** Use permissions of source file for compiled file
+    (<http://bugs.gnu.org/18477>)
+*** Fix bug when inlining some functions with optional arguments
+    (<http://bugs.gnu.org/17634>)
+*** Avoid quadratic expansion time in 'and' and 'or' macros
+    (<http://bugs.gnu.org/17147>)
+*** Fix expander bug introduced when adding support for tail patterns
+    (<http://lists.gnu.org/archive/html/guile-user/2015-09/msg00017.html>)
+*** Handle ~p in 'format' warnings (<http://bugs.gnu.org/18299>)
+*** Fix bug that exposed `list' invocations to CSE
+    (<http://bugs.gnu.org/21899>)
+*** Reduce eq? and eqv? over constants using equal?
+    (<http://bugs.gnu.org/21855>)
+*** Skip invalid .go files found in GUILE_LOAD_COMPILED_PATH
+
+** Threads
+*** Fix data races leading to corruption (<http://bugs.gnu.org/22152>)
+
+** Memory management
+*** Fix race between SMOB marking and finalization
+    (<http://bugs.gnu.org/19883>)
+
+** Ports
+*** Setting GUILE_INSTALL_LOCALE=1 sets port default charset from locale
+*** Fix port position handling on binary input ports
+    (<http://bugs.gnu.org/20302>)
+*** Bytevector and custom binary ports to use ISO-8859-1
+    (<http://bugs.gnu.org/20200>)
+*** Fix buffer overrun with unbuffered custom binary input ports
+    (<http://bugs.gnu.org/19621>)
+*** Fix memory corruption that arose when using 'get-bytevector-n'
+    (<http://bugs.gnu.org/17466>)
+
+** System
+*** {get,set}sockopt now expect type 'int' for SO_SNDBUF/SO_RCVBUF
+*** 'system*' now available on MS-Windows
+*** 'open-pipe' now available on MS-Windows
+*** Better support for file names containing backslashes on Windows
+
+** Web
+*** 'split-and-decode-uri-path' no longer decodes "+" to space
+*** HTTP: Support date strings with a leading space for hours
+    (<http://bugs.gnu.org/23421>)
+*** HTTP: Accept empty reason phrases (<http://bugs.gnu.org/22273>)
+*** HTTP: 'Location' header can now contain URI references, not just
+    absolute URIs
+*** HTTP: Improve chunked-mode support (<http://bugs.gnu.org/19939>)
+*** HTTP: 'open-socket-for-uri' now sets better OS buffering parameters
+    (<http://bugs.gnu.org/15368>)
+
+** Miscellaneous
+*** Fix 'atan' procedure when applied to complex numbers
+*** Fix Texinfo to HTML conversion for @itemize and @acronym
+    (<http://bugs.gnu.org/21772>)
+*** 'bytevector-fill!' accepts fill arguments greater than 127
+    (<http://bugs.gnu.org/19027>)
+*** 'bytevector-copy' correctly copies SRFI-4 homogeneous vectors
+   (<http://bugs.gnu.org/18866>)
+*** 'strerror' no longer hangs when passed a non-integer argument
+    (<http://bugs.gnu.org/18065>)
+*** 'scm_boot_guile' now gracefully handles argc == 0
+    (<http://bugs.gnu.org/18680>)
+*** Fix 'SCM_SMOB_OBJECT_LOC' definition (<http://bugs.gnu.org/18495>)
+*** Fix bug where 'bit-count*' was not using its second argument
+*** SRFI-1 'length+' raises an error for non-lists and dotted lists
+    (<http://bugs.gnu.org/17296>)
+*** Add documentation for SXPath (<http://bugs.gnu.org/19478>)
+
+
 Changes in 2.0.11 (since 2.0.10):
 
 This release fixes an embarrassing regression introduced in the C

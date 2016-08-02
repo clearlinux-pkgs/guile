@@ -1,3 +1,2024 @@
+2016-07-14  Andy Wingo  <wingo@pobox.com>
+
+	Bump version number to 2.0.12
+	* GUILE-VERSION (GUILE_MICRO_VERSION): Bump to 2.0.12.
+	  (LIBGUILE_INTERFACE_CURRENT): Increment, to account for
+	  scm_pointer_to_procedure_with_errno et al.
+	  (LIBGUILE_INTERFACE_REVISION): Reset to 0.
+	  (LIBGUILE_INTERFACE_AGE): Still compatible with the past, so
+	  increment.
+
+	Update NEWS
+	* NEWS: Update.
+
+	Add popen feature
+	* doc/ref/api-options.texi (Common Feature Symbols): Document the popen
+	  feature.
+	* doc/ref/posix.texi (Pipes): Depend on the popen feature, not fork.
+	* libguile/posix.c (scm_init_posix): Add popen feature if we can.
+
+	Fix error when boot-9.go after "skip invalid .go files" commit
+	* module/ice-9/boot-9.scm (map, for-each): Move definition up before
+	  loading r4rs.go.  Before, when r4rs.go was being loaded, there was a
+	  window in which "catch" defined in Scheme used with-fluids before
+	  "map" was defined, but if "with-fluids" in eval.scm uses "map".  That
+	  would lead to the inability to catch errors (stack overflow) if
+	  `catch' was used in that window -- which it now is, due to the "skip
+	  invalid .go files" patch.
+
+	Refactor implementation of current-warning-port
+	* module/ice-9/boot-9.scm (current-warning-port):
+	* libguile/init.c (scm_init_standard_ports):
+	* libguile/ports.c (cur_warnport_fluid, scm_current_warning_port)
+	  (scm_set_current_warning_port, scm_init_ports): Define the warning
+	  port in the same way as the error/output/input ports, with a fluid
+	  that doesn't require calling out to Scheme.
+
+2016-07-12  Eli Zaretskii  <eliz@gnu.org>
+
+	Add POSIX shims for MinGW
+	* libguile/posix-w32.h:
+	* libguile/posix-w32.c (kill, waitpid, getpriority, setpriority)
+	  (sched_getaffinity, sched_setaffinity): Add MinGW implementations.
+	  Also, provides macros that on Posix hosts are in sys/wait.h, like
+	  WIFEXITED and WTERMSIG.
+	  (start_child): Add implementation.
+
+2016-07-12  Andy Wingo  <wingo@pobox.com>
+
+	Don't recurse in drop-right
+	* module/srfi/srfi-1.scm (drop-right): Don't recurse, sadly, as we have
+	  a stack limit.
+
+	Keep trucking on weak table corruption
+	* libguile/hashtab.c (vacuum_weak_hash_table): Don't abort if we
+	  apparently remove more items than are in the table; instead print a
+	  warning.  "Fixes" #19180.
+
+	Reduce-right not limited by stack
+	* module/srfi/srfi-1.scm (reduce-right): Avoid blowing out the stack.
+	  Fixes #17485.
+
+2016-07-11  Andy Wingo  <wingo@pobox.com>
+
+	Rename win32-uname.[ch] to posix-w32.[ch]
+	* libguile/posix-w32.c:
+	* libguile/posix-w32.h: Rename from win32-uname.c and win32-uname.h.
+	* libguile/posix.c:
+	* libguile/Makefile.am
+	  (EXTRA_libguile_@GUILE_EFFECTIVE_VERSION@_la_SOURCES)
+	  (noinst_HEADERS): Adapt.
+
+	Ignore meta/build-env
+	* .gitignore: Ignore meta/build-env.
+
+	Factor start_child out of open_process
+	* libguile/posix.c (start_child): Factor out from open_process.  Based
+	  on initial work by Eli Zaretskii.
+
+	More specific status:exit-val et al compilation guards
+	* libguile/posix.c (scm_status_exit_val, scm_status_term_sig)
+	  (scm_status_stop_sig): Guard on WIFEXITED et al macros instead of on
+	  MinGW.
+
+	getaffinity, setaffinity docstring cleanup
+	* libguile/posix.c (scm_getaffinity, scm_setaffinity): Clean up
+	  docstrings.  Obviously if you have the function, you don't need to be
+	  told that you have it in the docstring.
+
+	Provide `kill' only if supported by the host
+	* libguile/posix.c (scm_kill): Only provide if the host has `kill'.  An
+	  incompatible change on MinGW, where this function would work only if
+	  the PID was the current PID, but that will be fixed by the next
+	  process.
+
+	More robust setuid, setgid, etc detection
+	* configure.ac: Check for getuid, getgid, setuid, and setgid.
+	* libguile/posix.c (scm_getuid, scm_getgid, scm_setuid, scm_setgid):
+	  Only provide Scheme functions if the OS provides these facilities.
+	  (scm_geteuid, scm_getegid, scm_seteuid, scm_setegid): Provide if the
+	  host has getuid, getgid, etc, instead of being in a MinGW guard.
+
+	Locale is default port encoding
+	* libguile/ports.c (scm_init_ports): Use the locale as the default
+	  charset.  This allows GUILE_INSTALL_LOCALE=1 to work properly,
+	  harmonizing the default port encoding with the installed locale.
+
+2016-07-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Fix invalid use of 'PTR2SCM'.
+	Fixes a typo introduced in 04359b42b952ce1a09444e64d83dae9fb0a39da6.
+
+	* libguile/load.c (try_load_thunk_from_file): Use 'SCM2PTR', not
+	'PTR2SCM'.
+
+2016-07-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Add missing 'const' qualifier.
+	* libguile/stime.c (tzvar): Add 'const'.
+
+	Unconditionally include <time.h> from Gnulib.
+	* libguile/stime.c: Unconditionally include <time.h>.
+
+	build: Remove unneeded check for 'unsetenv'.
+	* configure.ac: Remove check for 'unsetenv', which is unneeded since we
+	use Gnulib's 'unsetenv'.
+
+2016-07-10  Andy Wingo  <wingo@pobox.com>
+
+	Add meta/build-env
+	* meta/build-env.in: New file which sets up an environment that does not
+	  inherit GUILE_LOAD_PATH / GUILE_LOAD_COMPILED_PATH (unless
+	  cross-compiling).
+	* doc/ref/Makefile.am (autoconf-macros.texi):
+	* libguile/Makefile.am (snarf2checkedtexi):
+	* module/Makefile.am (ice-9/psyntax-pp.go):
+	* test-suite/standalone/Makefile.am (GUILE_INSTALL_LOCALE):
+	* am/guilec (.scm.go): Use build-env.
+	* configure.ac: Create build-env.
+
+	Avoid Gnulib unistr/* modules
+	(unistr/base, unistr/u8-mbtouc, unistr/u8-mbtouc-unsafe)
+	(unistr/u8-mbtoucr, unistr/u8-prev unistr/u8-uctomb, unitypes): --avoid
+	these modules.
+
+2016-07-07  Andy Wingo  <wingo@pobox.com>
+
+	Update Gnulib to 68b6ade.
+	Also add --conditional-dependencies to the flags.  See:
+	https://lists.gnu.org/archive/html/guile-devel/2016-07/msg00012.html
+
+2016-06-29  Andy Wingo  <wingo@pobox.com>
+
+	Skip incompatible .go files
+	* libguile/load.c (load_thunk_from_path, try_load_thunk_from_file):
+	  New functions.
+	  (search_path): Simplify.
+	  (scm_primitive_load_path, scm_init_eval_in_scheme): Use the new
+	  functions to load compiled files.
+	* module/ice-9/boot-9.scm (load-in-vicinity): Skip invalid .go files.
+
+	Inspired by a patch from Jan Nieuwenhuizen <janneke@gnu.org>.
+
+2016-06-29  Andy Wingo  <wingo@pobox.com>
+
+	Update NEWS
+	* NEWS: Update.
+
+	Update Gnulib to 6835fc458f30b94f15d69c35a79cbc2dfabe2d06.
+
+	Update git-version-gen.diff
+	* gnulib-local/build-aux/git-version-gen.diff: Update to apply to latest
+	  gnulib.
+
+	Temporarily use git-version-gen from gnulib
+
+	Update NEWS
+
+2016-06-28  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: smobs: Fix typos.
+	* doc/ref/api-smobs.texi (Smobs): Fix typos.
+
+	Update NEWS.
+
+2016-06-27  David Pirotte  <david@altosw.be>
+
+	Do not track some test-suite files
+	* .gitignore:  Adding test-smob-mark-race to the list of the test-suite
+	  files we do not track.
+
+2016-06-26  Andy Wingo  <wingo@pobox.com>
+
+	Add documentation pointer from getopt-long to SRFI-37.
+	* doc/ref/mod-getopt-long.texi (getopt-long): Point to SRFI-37.
+
+	Favor "escape continuation" over "one-shot continuation" in manual
+	* doc/ref/api-control.texi (Prompt Primitives): Remove mention of
+	  one-shot continuations, as it's possible to invoke them multiple times
+	  if the continuation is re-entered through other means.
+
+2016-06-26  Andy Wingo  <wingo@pobox.com>
+
+	Check for strtod_l before using it.
+	Based on a patch by Andy Stormont <astormont@racktopsystems.com>.
+
+	* configure.ac: Check for strtod_l.
+	* libguile/i18n.c (scm_locale_string_to_integer): Fix style.
+	  (scm_locale_string_to_inexact): Check for strtod_l.
+
+2016-06-26  Andy Wingo  <wingo@pobox.com>
+
+	Constant-folding eq? and eqv? uses deduplication
+	* test-suite/tests/peval.test ("partial evaluation"): Add tests.
+	* module/language/tree-il/peval.scm (peval): Constant-fold eq? and eqv?
+	  using equal?, anticipating deduplication.
+
+	Prevent (@ (ice-9 boot-9) x)
+	* module/ice-9/boot-9.scm: Prevent re-loading, perhaps via (@ (ice-9
+	  boot-9) foo).  (ice-9 boot-9) isn't a module.  Fixes #21801.
+
+	Fix texinfo->html for @acronym, @itemize
+	* module/texinfo/html.scm (itemize, acronym, tag-replacements, rules):
+	  Fix HTML serialization of @itemize and @acronym.  Fixes #21772.
+	* test-suite/tests/texinfo.html.test: New file.
+	* test-suite/Makefile.am: Add new file.
+
+2016-06-26  Daniel Llorens  <daniel.llorens@bluewin.ch>
+
+	Avoid stifling readline history when looking up options
+	With this patch, history is never stifled unless (readline-set!) is used.
+
+	* src/guile-readline/readline.c (scm_readline_options)
+
+2016-06-26  Andy Wingo  <wingo@pobox.com>
+
+	Fix typo about `keywords' read option
+	* doc/ref/api-data.texi (Keyword Read Syntax): Fix typo.  Thanks to
+	  Glenn Michaels for the report and fix.
+
+	Fix ,profile in pure modules
+	* libguile/scmsigs.c (close_1): Make the async closure in an environment
+	  where `lambda' has its usual meaning.  Fixes #21013.
+
+	Clarify use of the term "scanning" in the manual
+	* doc/ref/api-memory.texi (Garbage Collection Functions):
+	* doc/ref/libguile-concepts.texi (Garbage Collection): Attempt to be
+	  clear that scanning is a thing that happens in the mark phase.  Fixes
+	  #20907 I think.
+
+	Fix R6RS fold-left documentation
+	* doc/ref/r6rs.texi (rnrs lists): Fix documentation of fold-left.
+
+2016-06-24  Andy Wingo  <wingo@pobox.com>
+
+	Fix bug that exposed `list' invocations to CSE
+	* module/language/tree-il/effects.scm (make-effects-analyzer):
+	  Fix analysis for list, cons, make-prompt-tage, and vector; &allocation
+	  is a `cause' effect.  Fixes #21899.
+	* test-suite/tests/cse.test ("cse"): Add test case.
+
+	CSE visits prompt body in values context
+	* module/language/tree-il/cse.scm (cse): Visit prompt body in values
+	  context, similar to recent peval fix.
+
+2016-06-23  David Pirotte  <david@altosw.be>
+
+	Updating NEWS for 2.0.12 - draft
+	* NEWS:  Updating NEWS for 2.0.12 - draft
+
+2016-06-23  Andy Wingo  <wingo@pobox.com>
+
+	Register R6RS port and bytevector internals early
+	* libguile/bytevectors.c (sym_big, sym_little): Rename from scm_sym_big
+	  and scm_sym_little, and don't use the snarf mechanism as we need to
+	  initialize this value eagerly in case the C API is used before the
+	  Scheme module is loaded.
+	  (scm_bootstrap_bytevectors): Initialize the endianness symbols here.
+	* libguile/r6rs-ports.c (scm_register_r6rs_ports): Register the R6RS
+	  port kinds here, for the same reason.
+
+	Fix memory leak in scm_from_{u,}int64 on 32-bit platforms
+	* libguile/conv-integer.i.c (SCM_FROM_TYPE_PROTO):
+	* libguile/conv-uinteger.i.c (SCM_FROM_TYPE_PROTO): Fix a big in which
+	  scm_from_int64 and scm_from_uint64 on a 32-bit platform leaked memory
+	  if they needed to allocate a bignum.  Fixes #20079.
+
+	Fix race between SMOB marking and finalization
+	* libguile/smob.c (clear_smobnum): New helper.
+	  (finalize_smob): Re-set the smobnum to the "finalized smob" type
+	  before finalizing.  Fixes #19883.
+	  (scm_smob_prehistory): Pre-register a "finalized smob" type, which has
+	  no mark procedure.
+	* test-suite/standalone/test-smob-mark-race.c: New file.
+	* test-suite/standalone/Makefile.am: Arrange to build and run the new
+	  test.
+
+2016-06-22  Andy Wingo  <wingo@pobox.com>
+
+	Remove unused internal i18n functions
+	* libguile/i18n.c (str_upcase, str_downcase, str_upcase_l)
+	  (str_downcase_l): Remove unused inline functions.  Based on a patch by
+	  Pedro Aguilar <paguilar@paguilar.org>.  Fixes #19172.
+
+2016-06-21  Andy Wingo  <wingo@pobox.com>
+
+	Use source file permissions for compiled files
+	* module/system/base/compile.scm (call-with-output-file/atomic): Use the
+	  permissions of the source file, if available, as the permissions of
+	  the compiled file.  Fixes #18477.
+
+	Document pretty-print #:max-expr-width
+	* doc/ref/misc-modules.texi (Pretty Printing): Document #:max-expr-width
+	  keyword argument.  Fixes #17657.
+
+	Detect too-old libunistring at configure-time.
+	* configure.ac: Detect too-old libunistring at configure-time.  Fixes
+	  #17399.
+
+	Update and-let-star.test
+	* test-suite/tests/and-let-star.test ("and-let*"): Update test
+	  expectations.
+
+2016-06-21  Taylan Ulrich Bayırlı/Kammer  <taylanbayirli@gmail.com>
+
+	Add SRFI-2 (and-let*) test suite.
+	* test-suite/tests/srfi-2.test: New file.
+	* test-suite/Makefile.am (SCM_TESTS): Add it.
+
+	Fix SRFI-2 (and-let*) implementation.
+	* module/ice-9/and-let-star.scm (%and-let*): Re-implemented this in a
+	  more verbose but accurate way.
+
+2016-06-21  Andy Wingo  <wingo@pobox.com>
+
+	Document sigaction + SA_RESTART
+	* doc/ref/posix.texi (Signals): Document interaction between Guile's
+	  signal handling and SA_RESTART.  Fixes #14640.
+
+2016-06-21  Andy Wingo  <wingo@pobox.com>
+
+	Fix size measurement in bytevector_large_set
+	* libguile/bytevectors.c (bytevector_large_set): Fix computation of
+	  value size in words.
+	* test-suite/tests/bytevectors.test: Add test.
+
+	Thanks to Ben Rocer <fleabyte@mail.com> for the bug report and fix.
+
+2016-06-21  Andy Wingo  <wingo@pobox.com>
+
+	Fix uri-decode behavior for "+"
+	* module/web/uri.scm (uri-decode): Add #:decode-plus-to-space? keyword
+	  argument.
+	  (split-and-decode-uri-path): Don't decode plus to space.
+	* doc/ref/web.texi (URIs): Update documentation.
+	* test-suite/tests/web-uri.test ("decode"): Add tests.
+	* NEWS: Add entry.
+
+	Based on a patch by Brent <brent@tomski.co.za>.
+
+2016-06-21  Diogo F. S. Ramos  <dfsr@riseup.net>
+
+	Add reference to the lack of "non-greedy" variants
+	While describing special characters, remind the reader that
+	"non-greedy" variants are not supported.  They might not be familiar
+	with POSIX extended regular expression and expect it to work.
+
+	* doc/ref/api-regex.texi: Add "non-greedy" observation
+
+2016-06-21  Diogo F. S. Ramos  <dfsr@riseup.net>
+
+	Remove link to Emacs' regexp syntax
+	Linking to Emacs' regexps as an example of regexp syntax gives the
+	wrong impression that Guile supports it, which is not true.
+
+	* doc/ref/api-regex.texi: Remove link to Emacs' regexp syntax
+
+2016-06-20  Andy Wingo  <wingo@pobox.com>
+
+	peval: Always visit prompt bodies in values context
+	* module/language/tree-il/peval.scm (peval): Always evaluate the body in
+	  values context, as a captured continuation could continue to a
+	  continuation of any arity.  However the handler, if it returns, does
+	  return to the prompt's continuation.  Fixes #14347.  Thanks to Jussi
+	  Piitulainen for the report.
+	* test-suite/tests/control.test ("shift and reset"): Add a test.
+
+2016-06-20  Mark H Weaver  <mhw@netris.org>
+
+	FFI: Add support for functions that set 'errno'.
+	Implements wishlist item <https://debbugs.gnu.org/18592>.
+	Requested by Frank Terbeck <ft@bewatermyfriend.org>.
+	Based on a proposed patch by Nala Ginrut <nalaginrut@gmail.com>.
+
+	* libguile/foreign.c (cif_to_procedure): Add 'return_errno' argument.
+	  Store its boolean value in the object table of the generated program.
+	  (scm_i_foreign_call): If the stored 'return_errno' flag is true, then
+	  clear 'errno' before the call, save it after the call, and return it
+	  as a second return value.
+	  (pointer_to_procedure): New static function.
+	  (scm_pointer_to_procedure_with_errno): New C API function, implemented
+	  in terms of 'pointer_to_procedure'.
+	  (scm_pointer_to_procedure): Reimplement in terms of
+	  'pointer_to_procedure', no longer bound to "pointer->procedure".  See
+	  below.
+	  (scm_i_pointer_to_procedure): New C function bound to
+	  "pointer->procedure" which now accepts the optional #:return-errno?
+	  keyword argument, implemented in terms of 'pointer_to_procedure'.
+	  (k_return_errno): New keyword #:return-errno?.
+	* libguile/foreign.h (scm_pointer_to_procedure_with_errno): Add prototype.
+	* doc/ref/api-foreign.texi (Dynamic FFI): Adjust documentation.
+
+2016-06-20  Mark H Weaver  <mhw@netris.org>
+
+	Do not assume that sizeof (long) == sizeof (void *) == sizeof (SCM).
+	This assumption does not hold on systems that use the LLP64 data model.
+
+	Partially fixes <https://debbugs.gnu.org/22406>.
+	Reported by Peter TB Brett <peter@peter-b.co.uk>.
+
+	* libguile/numbers.h (scm_t_inum): Move here from numbers.c, and change
+	  to be equivalent to 'long' (formerly 'scm_t_signed_bits').
+	  (SCM_MOST_POSITIVE_FIXNUM, SCM_MOST_NEGATIVE_FIXNUM): Define based on
+	  SCM_I_FIXNUM_BIT instead of SCM_T_SIGNED_BITS_MAX.
+	  (SCM_I_INUM): Adjust definitions to return a 'scm_t_inum', and avoiding
+	  the assumption that SCM_UNPACK returns a 'long'.
+	* libguile/numbers.c (scm_t_inum): Move definition to numbers.h.
+	  Verify that 'scm_t_inum' fits within a SCM value.
+	  (scm_i_inum2big): Remove preprocessor code that forced a compile error
+	  unless sizeof (long) == sizeof (void *).
+	* libguile/vm-i-scheme.c (_CX): For fixnum assembly functions, choose
+	  the register size based on SCM_I_FIXNUM_BIT instead of SIZEOF_VOID_P.
+	  (ASM_MUL, "ash", "vector-ref", "vector-set", BV_FIXABLE_INT_REF)
+	  (BV_INT_REF, BV_FLOAT_REF, BV_FIXABLE_INT_SET, BV_INT_SET)
+	  (BV_FLOAT_SET): Use 'scm_t_inum' for fixnums instead of
+	  'scm_t_signed_bits'.
+
+2016-06-20  Mark H Weaver  <mhw@netris.org>
+
+	Fix fat_mutex owner corruption and other problems in fat_mutex_unlock.
+	Fixes <https://debbugs.gnu.org/22152>.
+	Reported by Iwan Aucamp <aucampia@gmail.com>.
+
+	* libguile/threads.c (fat_mutex_unlock): Avoid repeatedly decrementing
+	  m->level and changing the owner of the mutex when 'block_self' returns
+	  EINTR.  Unblock asyncs before calling scm_syserror.  Refactor the code
+	  to clarify the EINTR loop, and to make it more apparent that the async
+	  blocks and unblocks are balanced.
+
+2016-06-20  Mark H Weaver  <mhw@netris.org>
+
+	Avoid signed integer overflows in numeric conversions.
+	Reported by Miroslav Lichvar <mlichvar@redhat.com>
+	in <https://lists.gnu.org/archive/html/guile-devel/2016-02/msg00045.html>
+
+	* libguile/conv-integer.i.c: Avoid signed overflow.
+	* libguile/numbers.c (scm_is_signed_integer): Avoid signed overflow.
+
+2016-06-20  Mark H Weaver  <mhw@netris.org>
+
+	unget-bytevector: Allow start == length when count is not given.
+	* libguile/r6rs-ports.c (scm_unget_bytevector): Allow 'start' to be
+	  equal to the bytevector length when the 'count' optional argument is
+	  not passed.
+
+2016-05-08  Luribert  <luribert331@zoho.com>
+
+	doc: Fix typo in Web documentation.
+	* doc/ref/web.texi (Http Headers): Fixed typo.
+
+2016-05-08  Ludovic Courtès  <ludo@gnu.org>
+
+	http: Accept date strings with a leading space for hours.
+	Fixes <http://bugs.gnu.org/23421>.
+	Reported by Ricardo Wurmus <ricardo.wurmus@mdc-berlin.de>.
+
+	* module/web/http.scm (parse-rfc-822-date): Add two clauses for hours
+	with a leading space.
+	* test-suite/tests/web-http.test ("general headers"): Add two tests.
+
+2016-05-08  Ludovic Courtès  <ludo@gnu.org>
+
+	Remove unused C variables and functions.
+	Reported by GCC 6.1.0.
+
+	* libguile/expand.c (s_empty_combination, s_missing_body_expression)
+	(s_mixed_body_forms, s_bad_case_clause, s_bad_case_labels)
+	(s_duplicate_case_label, s_bad_exit_clause, s_splicing)
+	(s_bad_slot_number): Remove.
+	* libguile/ports.c (scm_utf8_bom, scm_utf16be_bom, scm_utf32be_bom):
+	Remove.
+	* libguile/vm.c (vm_error_stack_underflow): Remove.
+
+2016-02-01  Ludovic Courtès  <ludo@gnu.org>
+
+	Revert foreign objects.
+	For a long time the API failed to reach consensus among maintainers.
+	See <https://lists.gnu.org/archive/html/guile-devel/2015-11/msg00005.html>
+	and <https://lists.gnu.org/archive/html/guile-devel/2014-04/msg00069.html>.
+
+	This revert intends to break the deadlock and help further discussion to
+	take place with less pressure.
+
+	* libguile/foreign-object.c, libguile/foreign-object.h: Remove.
+	* libguile/Makefile.am (libguile_@GUILE_EFFECTIVE_VERSION@_la_SOURCES)
+	(modinclude_HEADERS): Adjust accordingly.
+	* libguile/init.c (scm_i_init_guile): Remove call to
+	'scm_register_foreign_object'.
+	* libguile.h: Remove inclusion of "libguile/foreign-object.h".
+	* module/system/foreign-object.scm: Remove.
+	* module/Makefile.am (SYSTEM_SOURCES): Adjust accordingly.
+	* test-suite/standalone/test-foreign-object-c.c,
+	test-suite/standalone/test-foreign-object-scm: Remove.
+	* test-suite/standalone/Makefile.am (check_SCRIPTS, check_PROGRAMS)
+	(TESTS): Adjust accordingly.
+	(test_foreign_object_c_SOURCES, test_foreign_object_c_CFLAGS)
+	(test_foreign_object_c_LDADD): Remove.
+	* doc/ref/libguile-foreign-objects.texi: Remove.
+	* doc/ref/api-foreign-objects.texi: Remove.
+	* doc/ref/libguile-smobs.texi: New file.
+	* doc/ref/Makefile.am (guile_TEXINFOS): Adjust accordingly.
+	* doc/ref/api-control.texi, doc/ref/api-smobs.texi,
+	doc/ref/api-utility.texi, doc/ref/guile.texi,
+	doc/ref/libguile-concepts.texi, doc/ref/libguile-program.texi:
+	Revert d9a4a1cd and 6e4630e0.
+
+2016-02-01  Andy Wingo  <wingo@pobox.com>
+
+	web: Be less strict when parsing entity tags.
+	* module/web/http.scm (parse-entity-tag): Be less strict, accepting
+	  unquoted strings as well.
+
+	* test-suite/tests/web-http.test ("response headers"): Add a test for
+	  etag parsing.
+
+2016-01-06  Mark H Weaver  <mhw@netris.org>
+
+	Bump user-visible copyright years to 2016.
+	* doc/ref/guile.texi: Add 2016 to user-visible copyright notice.
+	* module/ice-9/command-line.scm (version-etc): Bump 'copyright-year' to
+	  2016.
+	* module/system/repl/common.scm (*version*): Add 2016 to the range of
+	  copyright years.
+
+	SRFI-19: Update the table of leap seconds.
+	* module/srfi/srfi-19.scm (leap-second-table): Update to include the
+	  most recent leap second.
+
+2016-01-06  Ludovic Courtès  <ludo@gnu.org>
+
+	http: Use 'read-header-line' instead of 'read-line*'.
+	* module/web/http.scm (read-line*): Remove.
+	(read-continuation-line, read-header, read-request-line): Use
+	'read-header-line' instead of 'read-line*'.
+
+2016-01-06  Ludovic Courtès  <ludo@gnu.org>
+
+	http: Accept empty reason phrases.
+	Fixes <http://bugs.gnu.org/22273>.
+	Reported by Ricardo Wurmus <ricardo.wurmus@mdc-berlin.de>.
+
+	* module/web/http.scm (read-header-line): New procedure.
+	(read-response-line): Use it instead of 'read-line*'.
+	* test-suite/tests/web-http.test ("read-response-line"): Add test.
+
+2016-01-06  Ludovic Courtès  <ludo@gnu.org>
+
+	http: Test that responses lacking CR/LF are rejected.
+	* test-suite/tests/web-http.test ("read-response-line")["missing
+	CR/LF"]: New test.
+
+2015-11-28  Mark H Weaver  <mhw@netris.org>
+
+	Bump user-visible copyright years to 2015.
+	* module/ice-9/command-line.scm (version-etc): Bump 'copyright-year' to
+	  2015.
+
+	* module/system/repl/common.scm (*version*): Add 2015 to the range of
+	  copyright years.
+
+2015-11-13  Mark H Weaver  <mhw@netris.org>
+
+	Fix getsockopt/setsockopt handling of SO_SNDBUF/SO_RCVBUF options.
+	Reported by Park SungMin <byulparan_eng@icloud.com>
+	in <https://lists.gnu.org/archive/html/guile-user/2015-11/msg00026.html>.
+
+	* libguile/socket.c (scm_getsockopt, scm_setsockopt): Remove code that
+	  incorrectly assumed that the argument for SO_SNDBUF and SO_RCVBUF
+	  options was of type 'size_t'.  Both the Linux and POSIX documentation
+	  indicates that the argument is of type 'int', as is the case for most
+	  options.
+
+2015-11-13  Mark H Weaver  <mhw@netris.org>
+
+	Revert "Add SRFI-25 implementation"
+	This reverts commit aaea5b248ee0b9c5186baa203a7b29460dce626e.
+
+2015-11-05  Andreas Rottmann  <a.rottmann@gmx.at>
+	    Ludovic Courtès  <ludo@gnu.org>
+
+	Add SRFI-25 implementation
+	Adds an implementation of SRFI 25 on top of Guile's native arrays. The
+	implementation does not introduce a disjoint type; Guile arrays and
+	SRFI-25 arrays can be used interchangably, though with different, partly
+	conflicting APIs.
+
+	* NEWS: Add preliminary, incomplete section on 2.0.12, noting the
+	  addition of SRFI-25.
+	* doc/ref/srfi-modules.texi (SRFI-25): New node.
+	* module/srfi/srfi-25.scm: New file.
+	* test-suite/tests/srfi-25.test: New file.
+	* module/Makefile.am:
+	* test-suite/Makefile.am: Add new files.
+
+2015-11-05  Ludovic Courtès  <ludo@gnu.org>
+
+	Regenerate SRFI-14 character set data.
+	Suggested by Mike Gran <spk121@yahoo.com>.
+
+	* libguile/srfi-14.i.c: Regenerate for Unicode 8.0.0,
+	  <ftp://unicode.org/Public/UNIDATA/UnicodeData.txt> with SHA256
+	  38b17e1118206489a7e0ab5d29d7932212d38838df7d3ec025ecb58e8798ec20.
+
+2015-11-02  Mark H Weaver  <mhw@netris.org>
+
+	string ports: Add overflow checks and other fixes.
+	* libguile/strports.c (st_resize_port): Check that 'new_size' fits in a
+	  size_t.
+	  (st_end_input): Improve code clarity.
+	  (st_seek): Check for overflow during computation of target position.
+	  Check for invalid 'whence' argument.  Resize the port when seeking to
+	  a position beyond the end of the buffer.  Check for overflow during
+	  computation of new buffer size when resizing the port.
+
+2015-11-02  Mark H Weaver  <mhw@netris.org>
+
+	Fix seeking on binary input ports with putback buffers.
+	Fixes <http://bugs.gnu.org/20302>.
+	Reported by David Kastrup <dak@gnu.org>.
+
+	* libguile/r6rs-ports.c (bip_end_input): New static function.
+	  (initialize_bytevector_input_ports): Register it.
+	  (bip_seek): Rewrite to handle putback buffers, based on st_seek from
+	  strports.c.
+
+2015-11-02  Mark H Weaver  <mhw@netris.org>
+
+	build: Add SCM_T_OFF_MAX and SCM_T_OFF_MIN to scmconfig.h.
+	* libguile/gen-scmconfig.c (main): Add SCM_T_OFF_MAX and SCM_T_OFF_MIN
+	  to the generated 'scmconfig.h' file.
+
+2015-10-30  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: Mention a known-good Flex version number.
+	Suggested by Jamil Egdemir <unclejamil@gmail.com>.
+
+	* HACKING: Mention a Flex version number.
+
+2015-10-29  Ludovic Courtès  <ludo@gnu.org>
+
+	Thank David and Kouhei.
+
+2015-10-29  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Remove libguile/mkstemp.c, redundant with Gnulib.
+	Fixes <http://bugs.gnu.org/21425>.
+	Reported by Kouhei Sutou <kou@cozmixng.org>.
+
+	* configure.ac: Remove 'AC_REPLACE_FUNCS' for 'mkstemp'.
+	* libguile/Makefile.am (EXTRA_libguile_@GUILE_EFFECTIVE_VERSION@_la_SOURCES):
+	  Remove mkstemp.c.
+	* libguile/mkstemp.c: Remove.
+
+2015-10-29  David Michael  <fedora.dm0@gmail.com>
+
+	Remove SIGEV constant definitions.
+	* libguile/Makefile.am (chknew-E chknew-SIG): Anchor the end of the
+	  signal/error name pattern to only match alphanumeric symbols.
+	* libguile/cpp-SIG.syms (SIGEV_MAX_SIZE, SIGEV_NONE): Remove.
+	  (SIGEV_PAD_SIZE, SIGEV_SIGNAL, SIGEV_THREAD): Likewise.
+	  (SIGEV_THREAD_ID): Likewise.
+
+	Add Hurd signal and error constants.
+	* libguile/cpp-E.syms (EAUTH, EBACKGROUND): New definitions.
+	  (EBADRPC, ED, EDIED, EFTYPE, EGRATUITOUS, EGREGIOUS): Likewise.
+	  (EIEIO, ENEEDAUTH, EPROCLIM, EPROCUNAVAIL): Likewise.
+	  (EPROGMISMATCH, EPROGUNAVAIL, ERPCMISMATCH): Likewise.
+	* libguile/cpp-SIG.syms (SIGEMT, SIGEV_MAX_SIZE): Likewise.
+	  (SIGEV_PAD_SIZE, SIGINFO, SIGLOST): Likewise.
+
+	Add new Linux errno constants.
+	* libguile/cpp-E.syms (EHWPOISON, ERFKILL): New definitions.
+
+2015-10-29  David Michael  <fedora.dm0@gmail.com>
+
+	Fix the rule to check for new signals and errors
+	Fixes <http://bugs.gnu.org/21114>.
+
+	* libguile/Makefile.am (chknew-E chknew-SIG): Remove the line
+	  continuation after the targets, and include numbers in the
+	  recipe's signal/error regexp to catch names like E2BIG.
+
+2015-10-29  Ludovic Courtès  <ludo@gnu.org>
+
+	i18n: Add new collation test for posterity.
+	* test-suite/tests/i18n.test ("text collation (Czech)"): New test
+	  prefix.
+
+2015-09-26  Ludovic Courtès  <ludo@gnu.org>
+
+	web: Gracefully handle premature EOF when reading chunk header.
+	* module/web/http.scm (read-chunk-header): Return 0 when 'read-line'
+	  returns EOF.
+
+2015-09-18  Mark H Weaver  <mhw@netris.org>
+
+	docs: Fix external representation of <toplevel-define> in tree-il.
+	* doc/ref/compiler.texi (Tree-IL): Provide the correct external
+	  representation of <toplevel-define>.
+
+2015-09-10  Ludovic Courtès  <ludo@gnu.org>
+
+	web: Fix 'close' method of delimited input ports.
+	* module/web/response.scm (make-delimited-input-port)[close]: Replace
+	  erroneous self-recursive call with a call to 'close-port'.
+	* test-suite/tests/web-response.test ("example-1")["response-body-port +
+	  close"]: New test.
+
+2015-09-04  Ludovic Courtès  <ludo@gnu.org>
+
+	Thank Ricardo.
+
+	doc: Fix menu order for SXML.
+	* doc/ref/sxml.texi (SXML): Add missing quotes in example.
+	  Fix node order in menu.
+
+2015-09-04  Ricardo Wurmus  <rekado@elephly.net>
+
+	doc: Add SXPath documentation from sources
+	Fixes <http://bugs.gnu.org/19478>.
+
+	* doc/ref/sxml.texi (SXPath): Add procedure documentation from sources.
+
+2015-09-03  Mark H Weaver  <mhw@netris.org>
+
+	psyntax: Fix bug in match-each+.
+	Reported by Panicz Maciej Godek <godek.maciek@gmail.com> in
+	<http://lists.gnu.org/archive/html/guile-user/2015-09/msg00017.html>.
+
+	* module/ice-9/psyntax.scm (match-each+): Fix the case where a non-pair
+	  syntax object is encountered in a dotted tail.
+	* module/ice-9/psyntax-pp.scm: Regenerate.
+
+2015-09-02  Taylan Ulrich Bayırlı/Kammer  <taylanbayirli@gmail.com>
+
+	Clarify datum->syntax documentation.
+	* doc/ref/api-macros.texi (Syntax Case): Make it clear that the first
+	  argument to datum->syntax must be an identifier.
+
+2015-09-02  Mark H Weaver  <mhw@netris.org>
+
+	Fix uses of 'scm_gc_protect', which does not exist, in the manual.
+	* doc/ref/api-memory.texi (Garbage Collection Functions),
+	  doc/ref/libguile-concepts.texi (Garbage Collection): Change
+	  'scm_gc_protect' --> 'scm_gc_protect_object'.
+
+2015-07-28  Andreas Rottmann  <a.rottmann@gmx.at>
+
+	Heed the reader settings implied by #!r6rs
+	When encountering the #!r6rs directive, apply the appropriate reader
+	settings to the port.
+
+	* libguile/read.scm (read-string-as-list): New helper procedure.
+	  (scm_read_shebang): Set reader options implied by the R6RS syntax
+	  upon encountering the #!r6rs directive.
+	* test-suite/tests/reader.test (per-port-read-options): Add tests for
+	  the #!r6rs directive.
+
+2015-07-23  Mark H Weaver  <mhw@netris.org>
+
+	Fix atan procedure when applied to complex numbers.
+	Fixes a regression introduced in commit
+	ad79736c68a803a59814fbfc0cb4b092c2b4cddf.
+
+	* libguile/numbers.c (scm_atan): Fix the complex case.
+	* test-suite/tests/numbers.test ("atan"): Add test.
+
+2015-06-25  Ken Raeburn  <raeburn@raeburn.org>
+
+	FFI: sizeof: Account for trailing padding of structs.
+	* libguile/foreign.c (scm_sizeof): Make sure the overall size is a
+	  multiple of the alignment of the structure.
+	* test-suite/tests/foreign.test: Test size of { double, int8 }.
+
+2015-06-19  Mathieu Lirzin  <mthl@openmailbox.org>
+
+	doc: Fix parameter of 'set-record-type-printer!'.
+	* doc/ref/api-compound.texi (SRFI-9 Records)[set-record-type-printer!]:
+	  Fix parameter name.
+
+2015-06-19  Natanael Copa  <ncopa@alpinelinux.org>
+
+	i18n: Check for non-POSIX strtol_l.
+	* configure.ac: Check for strtol_l.
+	* libguile/i18n.c: Check HAVE_STRTOL_L before using strtol_l.
+
+2015-06-19  Alex Kost  <alezost@gmail.com>
+
+	Fix typo in the man page.
+	* doc/guile.1: "--no-autocompile" -> "--no-auto-compile".
+
+	Fix typo in manual.
+	* doc/ref/api-modules.texi (Using Guile Modules): Remove extra "yet".
+
+2015-06-02  Ludovic Courtès  <ludo@gnu.org>
+
+	gdb: Support builds with SCM_DEBUG_TYPING_STRICTNESS=2.
+	* libguile/libguile-2.0-gdb.scm (scm-value->integer): New procedure.
+	  (%scm-pretty-printer): Use it instead of 'value->integer'.
+
+	gdb: Remove unused procedure.
+	* libguile/libguile-2.0-gdb.scm (scm-value->string): Remove.
+
+2015-04-03  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: Update libgc URL.
+	* doc/ref/data-rep.texi (Conservative GC): Update libgc URL.
+
+2015-03-31  Ludovic Courtès  <ludo@gnu.org>
+
+	Fix test in 'fport_write'.
+	Reported by Doug Evans <xdje42@gmail.com>
+	at <http://lists.gnu.org/archive/html/guile-devel/2015-03/msg00023.html>.
+
+	* libguile/fports.c (fport_write): Change SIZE to REMAINING in
+	  condition.  This doesn't have any observable effect.
+
+2015-03-28  Mark H Weaver  <mhw@netris.org>
+
+	Fix bytevector and custom binary ports to actually use ISO-8859-1 encoding.
+	Fixes <http://bugs.gnu.org/20200>, introduced in
+	  commit 337edc591ffd8f8ec4176b0112ad10da29818141.
+	Reported by David Kastrup <dak@gnu.org>.
+
+	* libguile/r6rs-ports.c (make_bip, make_cbip, make_bop, make_cbop):
+	  After setting port encoding = NULL, update 'encoding_mode'
+	  accordingly.
+	* libguile/ports.c (scm_i_set_port_encoding_x): Add warning comment.
+	* test-suite/tests/r6rs-ports.test: Add tests.
+
+2015-03-27  Mark H Weaver  <mhw@netris.org>
+
+	Handle zero-length bytevectors correctly in (system base types).
+	* module/system/base/types.scm (cell->object): Use 'get-bytevector-n'
+	  instead of 'get-bytevector-all', so that the zero-length case does not
+	  return EOF.
+
+	Work around requirement that size be non-zero in GDB 'open-memory'.
+	* module/system/base/types.scm (memory-port): Handle zero size case
+	  specially.
+
+2015-03-10  Ludovic Courtès  <ludo@gnu.org>
+
+	web: Export 'server-impl' procedures and the 'http' server implementation.
+	* module/web/server.scm: Export the 'server-impl' procedures.
+	* module/web/server/http.scm: Export 'http'.
+
+2015-03-07  Mark H Weaver  <mhw@netris.org>
+
+	build: Use pipe symbol instead of comma for substitutions.
+	* meta/Makefile.am (substitute): Use pipe symbol instead of comma for
+	  substitutions.
+
+2015-03-05  Taylan Ulrich Bayırlı/Kammer  <taylanbayirli@gmail.com>
+
+	Correct docstring of 'symlink'.
+	* libguile/filesys.c (symlink): Correct the docstring, which had
+	  'oldpath' and 'newpath' confused.
+
+2015-03-04  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Gracefully handle ENOSYS return for 'setaffinity'.
+	Fixes <http://bugs.gnu.org/19646>.
+	Reported by John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>.
+
+	* test-suite/tests/posix.test ("affinity")["setaffinity"]: Wrap in
+	  'catch' and throw 'unresolved upon ENOSYS.
+
+2015-03-04  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Make 'test-guild-compile' more reliable.
+	Before that it would occasionally fail because the "$target" (not the
+	intermediate temporary file) would be produced.
+
+	* test-suite/standalone/test-guild-compile: Call 'pause' before 'sleep'
+	  in test program.
+
+2015-03-04  Ludovic Courtès  <ludo@gnu.org>
+
+	Use 'scm_is_eq' to compare 'SCM' objects.
+	* libguile/goops.c (scm_compute_applicable_methods): Use 'scm_is_eq'
+	  rather than direct comparison (regression introduced in 649ec8d8.)
+
+2015-03-02  Mark H Weaver  <mhw@netris.org>
+
+	Don't return expressions from void functions in numbers.c
+	Although popular compilers allow it as long as the expression is of type
+	void, it violates C99 and some compilers choke on it.
+
+	* libguile/numbers.c (scm_euclidean_divide, scm_floor_divide)
+	  (scm_ceiling_divide, scm_truncate_divide, scm_centered_divide)
+	  (scm_round_divide): Don't use the return statement with an expression
+	  from functions with return type void.
+
+2015-03-02  Mark H Weaver  <mhw@netris.org>
+
+	Web: http: Location header accepts URI-reference, not just absoluteURIs.
+	The now obsolete RFC2616 section 14.30 required that the Location
+	header be an absoluteURI, but RFC7231 section 7.1.2 allows it to
+	contain any URI-reference.
+
+	* module/web/http.scm: Use 'declare-relative-uri-header!' to declare
+	  the "Location" header.
+
+2015-03-02  Mark H Weaver  <mhw@netris.org>
+
+	Implement 'string-utf8-length' and 'scm_c_string_utf8_length'.
+	* libguile/strings.c (utf8_length, scm_c_string_utf8_length)
+	  (scm_string_utf8_length): New functions.
+	* libguile/strings.h (scm_c_string_utf8_length, scm_string_utf8_length):
+	  New prototypes.
+	* doc/ref/api-data.texi (Bytevectors as Strings): Add docs.
+	* doc/ref/guile.texi: Update manual copyright date to 2015.
+	* test-suite/tests/strings.test (string-utf8-length): Add tests.
+
+2015-03-01  Ludovic Courtès  <ludo@gnu.org>
+
+	http: Do not buffer HTTP chunks.
+	Fixes <http://bugs.gnu.org/19939>.
+
+	* module/web/http.scm (read-chunk, read-chunk-body): Remove.
+	  (make-chunked-input-port)[next-chunk, buffer-, buffer-size,
+	  buffer-pointer]: Remove.
+	  [chunk-size, remaining]: New variables.
+	  [read!]: Rewrite to write directly to BV.
+	* test-suite/tests/web-http.test ("chunked encoding")["reads chunks
+	  without buffering", "reads across chunk boundaries"]: New tests.
+
+2015-03-01  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Use 'pass-if-equal' in web-http chunked encoding tests.
+	* test-suite/tests/web-http.test ("chunked encoding"): Use
+	  'pass-if-equal' where appropriate.
+
+2015-02-25  Andy Wingo  <wingo@pobox.com>
+
+	Struct and array GDB pretty printers hint as arrays
+	* libguile/libguile-2.0-gdb.scm (make-scm-pretty-printer-worker):
+	  (%scm-pretty-printer): Refactor to avoid printing all struct / array
+	  fields by hinting these as arrays.  The resulting print is not as
+	  faithful to the original data, but that's probably OK.
+
+2015-02-25  Andy Wingo  <wingo@pobox.com>
+
+	(system base types) knows about variables
+	* module/system/base/types.scm (%tc7-variable): New tc7.
+	  (cell->object): Handle tc7-variable.
+
+	* test-suite/tests/types.test ("opaque objects"): Add a test.
+
+2015-02-06  Andy Wingo  <wingo@pobox.com>
+
+	Fix foreign objects for getter method change
+	* module/system/foreign-object.scm: Fix getters after change to make
+	  <accessor-method> instances only apply to their precise specializer
+	  types.
+
+2015-01-26  Andy Wingo  <wingo@pobox.com>
+
+	Accessor methods only apply to subclasses with their slot
+	* libguile/goops.c (is_accessor_method, scm_compute_applicable_methods):
+	  Fix regression from 51f66c912078a25ab0380c8fc070abb73d178d98 (2009).
+	  Accessor methods are added on each subclass on which the slot is
+	  present; therefore if a subclass doesn't have a method, then the
+	  methods doesn't apply.  Truly fixes #17355, unlike
+	  583a23bf104c84d9617222856e188f3f3af4934d.
+
+	* module/oop/goops.scm (compute-cmethod, compute-getter-method)
+	  (compute-setter-method): Revert earlier changes.
+
+	* test-suite/tests/goops.test ("accessor slots"): Update for new
+	  expectations, in agreement with Guile 1.8.
+
+2015-01-24  Andy Wingo  <wingo@pobox.com>
+
+	Fix accessor struct field inlining
+	* module/oop/goops/compile.scm: Inline into goops.scm, leaving a
+	  compatible interface stub behind.
+
+	* module/oop/goops/dispatch.scm: Don't import (oop goops compile), to
+	  break circularities.
+
+	* module/oop/goops.scm: Move (oop goops util) include up to the top, and
+	  import (ice-9 match).
+	  (compute-cmethod): Move here from compile.scm.  Add a special case for
+	  accessor methods, so as to fix bug #17355.
+	  (compute-getter-method, compute-setter-method): #:procedure slot is
+	  now generic.
+
+	* test-suite/tests/goops.test ("accessor slots"): New test.
+
+2015-01-22  Ludovic Courtès  <ludo@gnu.org>
+
+	Really disable stack underflow checks when VM_CHECK_UNDERFLOW == 0.
+	* libguile/vm-engine.h: Use '#if VM_CHECK_UNDERFLOW' instead of
+	  '#ifdef'.
+
+2015-01-22  Andy Wingo  <wingo@pobox.com>
+
+	Fix #:init-value on class-allocated slots
+	Allocating an instance of a class with a #:class or #:each-subclass slot
+	allocation should not re-initialize the class-allocated slot.  In Guile
+	1.8, this worked by effectively doing a slot-bound? within
+	%initialize-object.  In Guile 2.0 we instead initialize the slot when it
+	is allocated -- in compute-get-n-set.
+
+	* module/oop/goops.scm (compute-getters-n-setters): Don't set an
+	  init-thunk for class-allocated slots.
+	  (compute-get-n-set): Initialize class-allocated slots here, if an
+	  init-thunk or init-value are present.
+
+	* test-suite/tests/goops.test ("#:each-subclass"): Add test.
+
+2015-01-18  Ludovic Courtès  <ludo@gnu.org>
+
+	Fix buffer overrun with unbuffered custom binary input ports.
+	Fixes <http://bugs.gnu.org/19621>.
+
+	Before that, in 'cbip_fill_input', BUFFERED would be set to 0 when
+	reading from 'scm_getc' et al, because 'shortbuf' was being used.  Thus,
+	we could eventually execute this line:
+
+	      /* Copy the data back to the internal buffer.  */
+	      memcpy ((char *) c_port->read_pos, SCM_BYTEVECTOR_CONTENTS (bv),
+		      c_octets);
+
+	But 'read_pos' would quickly point to the fields beyond 'shortbuf',
+	thereby leading to a corruption of the 'scm_t_port' itself.
+
+	* libguile/r6rs-ports.c (cbip_setvbuf): When READ_SIZE is 0, keep using
+	  BV as the 'read_buf'.
+	  (cbip_fill_input): Adjust assertion to accept 'read_buf_size = 1'.
+	* test-suite/tests/r6rs-ports.test ("7.2.7 Input Ports")["custom binary
+	  input port unbuffered & 'get-string-all'", "custom binary input port
+	  unbuffered UTF-8 & 'get-string-all'"]: New tests.
+
+2015-01-13  Ludovic Courtès  <ludo@gnu.org>
+
+	Improve output of command-line errors.
+	* module/ice-9/command-line.scm (shell-usage): Add 'newline' call when
+	  FMT is true.
+	  (compile-shell-switches)[error]: Prepend "error: " and append "~%" to
+	  FMT.
+	  Use a lower-case message.
+
+2015-01-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Optimize 'string-hash'.
+	This yields a 50% improvement on the "narrow string" benchmark of
+	'hash.bm', 41% on "wide string", and 76% on "long string".
+
+	* libguile/hash.c (scm_i_string_hash): Rewrite to avoid
+	  'scm_i_string_ref' calls.
+
+2015-01-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Add 'string-hash' benchmarks.
+	* benchmark-suite/benchmarks/hash.bm: New file.
+	* benchmark-suite/Makefile.am (SCM_BENCHMARKS): Add it.
+
+2015-01-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Deprecate 'scm_string_hash'.
+	This function has been unused internally for some time and is undocumented.
+
+	* libguile/hash.c (scm_string_hash): Wrap if #if SCM_ENABLE_DEPRECATED
+	  == 1.
+	* libguile/hash.h (scm_string_hash): Likewise, and replace SCM_API with
+	  SCM_DEPRECATED.
+
+2015-01-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Optimize 'write' for strings.
+	This shows a 19% improvement on the "string without escapes"
+	micro-benchmark of 'write.bm', and 12% on "string with escapes".
+
+	* libguile/print.c (iprin1) <scm_tc7_string>: Replace 'scm_i_string_ref'
+	  loop with a call to 'write_string'.
+	  (display_character): Adjust description of return value in comment.
+	  (write_string): New function.
+
+2015-01-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Avoid converting the 'mode' argument of 'open-file'.
+	* libguile/fports.c (scm_open_file_with_encoding): const-qualify 'md'
+	  and 'ptr'.  Add call to 'scm_i_try_narrow_string'.  Use
+	  'scm_i_string_chars' instead of 'scm_to_locale_string' plus '
+	  scm_dynwind_free'.
+	* test-suite/tests/ports.test ("invalid wide mode string",
+	  "valid wide mode string"): New tests.
+
+	statprof: 'statprof' and 'with-statprof' return the code's return values.
+	* module/statprof.scm (statprof): Return the return values of THUNK.
+	  (with-statprof): Adjust docstring accordingly.
+	* test-suite/tests/statprof.test ("return values"): New test.
+	* doc/ref/statprof.texi (Statprof): Adjust accordingly.
+
+2015-01-09  Ludovic Courtès  <ludo@gnu.org>
+
+	Improve deprecation message of 'scm_add_to_port_table'.
+	Reported by Thien-Thi Nguyen <ttn@gnu.org>.
+
+	* libguile/ports.c (scm_add_to_port_table): Mention
+	  'scm_new_port_table_entry'.
+
+2014-12-06  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Better handle substitutions in 'guile-2.0.pc' & co.
+	* meta/Makefile.am (dependency_substitutions): Use '|' as the separate
+	  instead of ','.  See <http://hydra.nixos.org/build/17684751>.
+
+2014-12-03  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Add missing substitutions for 'guile-2.0.pc'.
+	This is a followup to 5fac1a7.
+
+	* meta/Makefile.am (substitute): Add GUILE_* and LIBGUILE_* substitutions,
+	  and $(dependency_substitutions).
+	  (dependency_substitutions): New variable.
+
+2014-12-03  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: Clarify the unit of the 'offset' argument of 'seek'.
+	Reported in <http://bugs.gnu.org/18520>
+	by David Kastrup <dak@gnu.org>.
+
+	* doc/ref/api-io.texi (Random Access): Clarify the unit of the 'offset'
+	  argument to 'seek'.
+
+2014-12-03  Ludovic Courtès  <ludo@gnu.org>
+
+	Add the 'guild' and 'guile' variables to 'guile-2.0.pc'.
+	* configure.ac: Remove meta/guile-2.0.pc and
+	  meta/guile-2.0-uninstalled.pc from 'AC_CONFIG_FILES'.
+	* meta/Makefile.am (substitute): New variable.
+	  (guile-2.0.pc, guile-2.0-uninstalled.pc): New targets.
+	  (guile-config, guild): Use $(substitute) instead of duplicated sed
+	  script.
+	  (CLEANFILES): Add the .pc files.
+	* meta/guile-2.0.pc.in (bindir, guild, guile): New variables.
+	* doc/ref/libguile-parallel.texi (Parallel Installations): Document the
+	  'guild' and 'guile' pkg-config variables.
+
+2014-12-02  Ludovic Courtès  <ludo@gnu.org>
+
+	Update (system base lalr) from upstream.
+	Suggested by Jan Nieuwenhuizen <janneke@gnu.org>.
+
+	* module/system/base/lalr.upstream.scm: Update from
+	  <https://github.com/schemeway/lalr-scm.git>, commit 4c4f149.
+
+2014-12-02  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: Tell when 'GUILE_INSTALL_LOCALE' first appeared.
+	* doc/ref/guile-invoke.texi (Environment Variables): Add footnote about
+	  the Guile version where 'GUILE_INSTALL_LOCALE' appeared.
+
+2014-12-02  Chris Jester-Young  <cky944@gmail.com>
+
+	Implement SRFI 28: Basic Format Strings.
+	* module/srfi/srfi-28.scm: New module.
+	* module/Makefile.am (SRFI_SOURCES): Add srfi/srfi-28.scm.
+	* doc/ref/srfi-modules.texi (SRFI-28): New node.
+
+2014-11-20  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: Clarify behavior of 'select' in the presence of signal interruptions.
+	Fixes <http://bugs.gnu.org/18988>.
+	Reported by Chris Vine <chris@cvine.freeserve.co.uk>.
+
+	* libguile/filesys.c (scm_select): Clarify handling of signal
+	  interruptions.
+	* doc/ref/posix.texi (Ports and File Descriptors): Adjust accordingly.
+
+2014-11-19  Rob Browning  <rlb@defaultvalue.org>
+
+	Recognize m68k, s390x, and sh4 as compilation targets
+	* module/system/base/target.scm (cpu-endianness, triplet-pointer-size):
+	  Add cases for "m68k", "sh4", and "s390x".
+
+2014-11-12  Mark H Weaver  <mhw@netris.org>
+
+	Fix bytevector-fill! to accept fill arguments greater than 127.
+	Fixes <http://bugs.gnu.org/19027>.
+
+	* libguile/bytevectors.c (scm_bytevector_fill_x): Accept fill arguments
+	  between -128 and 255.
+
+	* test-suite/tests/bytevectors.test ("2.2 General Operations"): Add
+	  tests.
+
+2014-11-12  Mark H Weaver  <mhw@netris.org>
+
+	Avoid signed overflow and use size_t in bytevectors.c.
+	* libguile/bytevectors.c (ULONG_MAX): Remove (unportable) fallback
+	  definition.  It is no longer used.
+	  (scm_make_bytevector): Use 'size_t' instead of 'unsigned' for
+	  indices.  Use 'scm_t_uint8' instead of 'signed char' for elements
+	  and c_fill.  Previously relied on GNU-C-specific behavior when
+	  casting integers in the range 128-255 to signed char.
+	  (GENERIC_INTEGER_ACCESSOR_PROLOGUE, INTEGER_LIST_TO_BYTEVECTOR)
+	  (scm_bytevector_eq_p, scm_bytevector_copy_x, scm_bytevector_copy)
+	  (scm_bytevector_to_u8_list, scm_u8_list_to_bytevector)
+	  (scm_bytevector_fill_x): Use 'size_t' instead of 'unsigned' for
+	  indices.  Use 'scm_t_uint8' for elements.
+
+	Add SCM_VALIDATE_SIZE_COPY and SCM_NUM2SIZE.
+	* libguile/validate.h (SCM_VALIDATE_SIZE_COPY, SCM_NUM2SIZE): New
+	  macros.
+
+2014-11-12  Mark H Weaver  <mhw@netris.org>
+
+	Fix bytevector-copy when applied to SRFI-4 homogeneous numeric vectors.
+	Fixes <http://bugs.gnu.org/18866>.
+	Reported by tantalum <sph@posteo.eu>.
+
+	* libguile/bytevectors.c (scm_bytevector_copy): Always create a VU8
+	  bytevector.
+
+	* test-suite/tests/bytevectors.test: Add test.
+
+2014-11-12  Thomas Klausner  <wiz@NetBSD.org>
+
+	Avoid bash-specific '==' comparison operator in guile.m4.
+	Fixes <http://bugs.gnu.org/18898>.
+
+	* meta/guile.m4 (GUILE_PROGS): Use '=' instead of the bash-specific '=='
+	  comparison operator in 'test' call.
+
+2014-11-12  Mark H Weaver  <mhw@netris.org>
+
+	Fix strerror error handling when given a non-integer argument.
+	Fixes <http://bugs.gnu.org/18065>.
+	Reported and fixed by Glenn Michaels <gmichaels@Safe-mail.net>.
+
+	* libguile/error.c (scm_strerror): Convert the argument to a C integer
+	  outside of the critical section, to avoid deadlock on error.
+	* THANKS: Add Glenn Michaels to the fixes section.
+
+2014-11-01  Ludovic Courtès  <ludo@gnu.org>
+
+	Reduce C heap allocations in 'search-path'.
+	* libguile/load.c (scm_c_string_has_an_ext): Rename to...
+	  (string_has_an_ext): ... this.  Add docstring.  Change
+	  'str' to be an SCM, and remove 'len' parameter.  Change loop body to
+	  use 'scm_string_suffix_p'.
+	  (search_path): Update accordingly.
+
+	Use on-stack or GC-managed memory in 'search-path'.
+	* libguile/load.c (stringbuf_free): Remove.
+	  (stringbuf_grow): Use 'scm_gc_malloc_pointerless' instead of 'scm_realloc'.
+	  (search_path): Use stack-allocated INITIAL_BUFFER instead of
+	  'scm_malloc'.  Remove use of 'stringbuf_free'.
+
+2014-10-15  Mark H Weaver  <mhw@netris.org>
+
+	i18n: Add HAVE_USELOCALE as a requirement for USE_GNU_LOCALE_API.
+	* configure.ac: Check for uselocale.
+	* libguile/i18n.c: Add HAVE_USELOCALE to the list of requirements
+	  before defining USE_GNU_LOCALE_API.
+
+2014-10-11  Mark H Weaver  <mhw@netris.org>
+
+	scm_boot_guile: Gracefully handle the case where argc == 0.
+	Fixes <http://bugs.gnu.org/18680>.
+	Reported by Nala Ginrut <nalaginrut@gmail.com>.
+
+	* libguile/init.c (scm_boot_guile): Do not canonicalize argv[0] unless
+	  argc > 0.
+	* THANKS: Add Nala Ginrut to the fixes section.
+
+2014-10-07  Mark H Weaver  <mhw@netris.org>
+
+	Thank Per Bothner.
+	* THANKS: Add Per Bothner to the "libraries" section (for SRFI-64).
+
+2014-10-06  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Adjust autogen.sh to 'libtoolize' name on Darwin.
+	Reported by Daniel Llorens.
+
+	* autogen.sh: Use 'glibtoolize' on Darwin.
+
+2014-10-02  Mark H Weaver  <mhw@netris.org>
+
+	read: Accept "\(" in string literals.
+	Suggested by David Kastrup <dak@gnu.org> in <http://bugs.gnu.org/13644>.
+
+	* libguile/read.c (scm_read_string_like_syntax): Accept "\(" as
+	  equivalent to "(".
+	* doc/ref/api-data.texi (String Syntax): Document it.
+	* test-suite/tests/reader.test ("reading"): Add test.
+
+2014-10-02  Mark H Weaver  <mhw@netris.org>
+
+	docs: Fix documented return type of 'scm_c_export'.
+	Fixes <http://bugs.gnu.org/17869>.
+	Reported and fixed by Alexei Matveev <alexei.matveev@gmail.com>.
+
+	* doc/ref/api-modules.texi (Accessing Modules from C): Change documented
+	  return type of 'scm_c_export' to 'void' to reflect reality.
+	* THANKS: Add Alexei Matveev to the fixes section.
+
+2014-09-30  Andy Wingo  <wingo@pobox.com>
+
+	Add (ice-9 unicode) module
+	* libguile/unicode.c:
+	* libguile/unicode.h:
+	* test-suite/tests/unicode.test:
+	* module/ice-9/unicode.scm: New files.
+
+	* module/Makefile.am:
+	* libguile/Makefile.am:
+	* test-suite/Makefile.am:
+	* libguile/init.c: Wire new files into the build.
+
+	* doc/ref/api-data.texi: Add docs.
+
+2014-09-29  Mark H Weaver  <mhw@netris.org>
+
+	peval: Handle optional argument inits that refer to previous arguments.
+	Fixes <http://bugs.gnu.org/17634>.
+	Reported by Josep Portella Florit <jpf@primfilat.com>.
+
+	* module/language/tree-il/peval.scm (inlined-application): When inlining
+	  an application whose operator is a lambda expression with optional
+	  arguments that rely on default initializers, expand into a series of
+	  nested let expressions, to ensure that previous arguments are in scope
+	  when the default initializers are evaluated.
+
+	* test-suite/tests/peval.test ("partial evaluation"): Add tests.
+
+2014-09-25  Mark H Weaver  <mhw@netris.org>
+
+	doc: Improve description of vector-unfold and vector-unfold-right.
+	* doc/ref/srfi-modules.texi (SRFI-43 Constructors)[vector-unfold]:
+	  Improve description.
+	* module/srfi/srfi-43.scm (vector-unfold, vector-unfold-right):
+	  Improve docstrings.
+
+2014-09-22  Ludovic Courtès  <ludo@gnu.org>
+
+	Add 'EXIT_SUCCESS' and 'EXIT_FAILURE'.
+	Suggested by Frank Terbeck <ft@bewatermyfriend.org>.
+
+	* libguile/posix.c (scm_init_posix): Define 'EXIT_SUCCESS' and
+	  'EXIT_FAILURE'.
+	* doc/ref/posix.texi (Processes): Document them.
+
+2014-09-22  David Michael  <fedora.dm0@gmail.com>
+
+	guile-readline: Use the current directory if HOME is unset.
+	* guile-readline/ice-9/readline.scm (history-file): When the HOME
+	  environment variable is unset, use the current directory instead.
+
+2014-09-20  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Use 'libtoolize' in autogen.sh.
+	Fixes <http://bugs.gnu.org/18470>.
+	Reported by Rob Browning <rlb@defaultvalue.org>.
+
+	* autogen.sh: Invoke 'libtoolize' instead of 'libtool'.
+
+2014-09-20  David Kastrup  <dak@gnu.org>
+
+	Fix SCM_SMOB_OBJECT{_,_0_,_1_,_2_,_3_}LOC.
+	Fixes <http://bugs.gnu.org/18495>.
+
+	* libguile/smob.h (SCM_SMOB_OBJECT_LOC, SCM_SMOB_OBJECT_0_LOC)
+	  (SCM_SMOB_OBJECT_1_LOC, SCM_SMOB_OBJECT_2_LOC)
+	  (SCM_SMOB_OBJECT_3_LOC): These elementary API macros have been broken
+	  by commit 56164dc47f6616b359f0ad23be208f01a77b55fa in 2009.
+
+2014-09-20  Mark H Weaver  <mhw@netris.org>
+
+	guild disassemble: Use #:prefix instead of #:renamer.
+	* module/scripts/disassemble.scm: Use #:prefix instead of #:renamer
+	  in #:use-module clause.
+
+	Document #:prefix option in use-module clauses.
+	* doc/ref/api-modules.texi (Using Guile Modules): Document #:prefix
+	  option.
+
+	SRFI-43: vector-concatenate: Fix error message.
+	* module/srfi/srfi-43.scm (vector-concatenate): Fix the 'who' of an
+	  error message.
+
+2014-09-20  Mark H Weaver  <mhw@netris.org>
+
+	VM: Use register "a3" for IP_REG on m68k.
+	Subset of a patch by Andreas Schwab <schwab@linux-m68k.org>.
+	Reported by Rob Browning <rlb@defaultvalue.org>.
+
+	* libguile/vm-engine.h (IP_REG)[__mc68000__]: Use register "a3".
+
+2014-09-20  Mark H Weaver  <mhw@netris.org>
+
+	VM: Allow the C compiler to choose FP_REG on ARM.
+	Reported by Rob Browning <rlb@defaultvalue.org>.
+
+	* libguile/vm-engine.h (IP_REG)[__arm__]: Remove explicit register
+	  choice ("r7") for FP_REG, which was reported to cause compilation
+	  failures on ARM.
+
+2014-09-20  Mark H Weaver  <mhw@netris.org>
+
+	Do not assume that 64-bit integers will be 64-bit aligned.
+	* libguile/foreign.c (raw_bytecode, objcode_cells):
+	* libguile/gsubr.c (raw_bytecode, objcode_cells): Use SCM_ALIGNED to
+	  ensure 64-bit alignment.
+
+2014-09-20  Mark H Weaver  <mhw@netris.org>
+
+	VM: ASM_MUL for ARM: Add earlyclobber constraint to the SMULL outputs.
+	Reported by Rob Browning <rlb@defaultvalue.org>.
+
+	* libguile/vm-i-scheme.c (ASM_MUL)[ARM]: Add earlyclobber (&) constraint
+	  to the SMULL output registers.
+
+2014-09-17  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Link test against Gnulib.
+	Reported by Eli Zaretskii <eliz@gnu.org>.
+
+	* test-suite/standalone/Makefile.am (test_scm_take_locale_symbol_LDADD):
+	  Add libgnu.la, for the 'strdup' replacement.
+
+2014-08-26  Ludovic Courtès  <ludo@gnu.org>
+
+	Thank Franck.
+
+2014-08-26  Ludovic Courtès  <ludo@gnu.org>
+
+	Handle ~p in 'format' warnings.
+	Fixes <http://bugs.gnu.org/18299>.
+	Reported by Frank Terbeck <ft@bewatermyfriend.org>.
+
+	* module/language/tree-il/analyze.scm (format-string-argument-count):
+	  Add case for ~p.
+	* test-suite/tests/tree-il.test ("warnings")["format"]("~p", "~p, too
+	  few arguments", "~:p", "~:@p, too many arguments", "~:@p, too few
+	  arguments"): New tests.
+
+2014-08-15  Eli Zaretskii  <eliz@gnu.org>
+
+	On MS-Windows, don't return file names with backslashes from search-path.
+	* libguile/load.c (search_path): On MS-Windows, convert all
+	  backslashes to forward slashes if the file was found on PATH.
+
+2014-08-14  Mark H Weaver  <mhw@netris.org>
+
+	Copy the result from 'nl_langinfo' before it can be overwritten.
+	Based on a patch by Eli Zaretskii <eliz@gnu.org>.
+
+	* libguile/i18n.c (copy_string_or_null): New static function.
+	  (scm_nl_langinfo): Use 'copy_string_or_null' to copy the result from
+	  'nl_langinfo' and 'nl_langinfo_l' before the next call and before
+	  releasing the locale mutex.
+
+2014-08-13  Eli Zaretskii  <eliz@gnu.org>
+
+	Make temporary file in coding.test work on MS-Windows.
+	* test-suite/tests/coding.test (with-temp-file): Instead of
+	  hard-coding "/tmp" as the temporary directory, use $TMPDIR or
+	  $TEMP from the environment, and fall back on "/tmp" if none of
+	  those 2 is defined.
+
+2014-08-12  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: "!#" does not need to appear on a line of its own.
+	* doc/ref/api-evaluation.texi (Block Comments): Remove "which must appear on a
+	  line of their own".  Reported by David Michael <fedora.dm0@gmail.com>.
+
+2014-08-11  David Kastrup  <dak@gnu.org>
+
+	Clarify that object-properties cannot be reliably applied to numbers.
+	* doc/ref/api-utility.texi (Object Properties)[make-object-property]:
+	  Clarify that object-properties cannot be reliably applied to numbers.
+
+2014-07-31  Ian Price  <ianprice90@googlemail.com>
+
+	Provide curried version of define*-public.
+	* module/ice-9/curried-definitions.scm (define*-public): New macro.
+
+2014-07-30  Ian Price  <ianprice90@googlemail.com>
+
+	Prevent add-to-load-path from adding duplicate entries
+	* module/ice-9/boot-9.scm (add-to-load-path): Remove argument from
+	  %load-path (if it exists) before pushing. This also means that the
+	  `elt' will always be at the front of %load-path.
+
+2014-07-04  Ludovic Courtès  <ludo@gnu.org>
+
+	Recognize more ARM targets.
+	Suggested by Dale P. Smith.
+
+	* module/system/base/target.scm (cpu-endianness): Add cases for
+	  "arm.*eb", "^aarch64.*be", and "aarch64".  Change "arm" case to
+	  "arm.*".
+	  (triplet-pointer-size): Allow underscore as in 'aarch64_be'.
+	* test-suite/tests/asm-to-bytecode.test ("cross-compilation")["armeb-unknown-linux-gnu",
+	  "aarch64-linux-gnu", "aarch64_be-linux-gnu"]: New tests.
+
+2014-07-04  Andy Wingo  <wingo@pobox.com>
+
+	Fix bit-count* bug
+	* libguile/bitvectors.c (scm_bit_count_star): Fix typo introduced in
+	  2005 refactor (!) in which the second arg was erroneously taken from
+	  the first arg.
+
+	* test-suite/tests/bitvectors.test: Add test.
+
+	* doc/ref/api-compound.texi: Fix doc example for u32vector selector.
+
+2014-07-04  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Support pthread builds without 'pthread_cancel' support (Android).
+	Reported by Sylvain Beucler <beuc@beuc.net>.
+
+	* configure.ac: Check for 'pthread_cancel'.
+	* libguile/threads.c (scm_cancel_thread): Conditionalize on
+	  !SCM_USE_PTHREAD_THREADS || defined HAVE_PTHREAD_CANCEL.
+	* test-suite/tests/threads.test (require-cancel-thread): New procedure.
+	  ("timed joining fails if timeout exceeded", "join-thread returns
+	  timeoutval on timeout", "cancel succeeds", "handler result passed to
+	  join", "can cancel self"): Use it.
+
+2014-07-04  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Use 'LT_LIB_M' to determine whether -lm is needed.
+	* configure.ac: Use 'LT_LIB_M' instead of 'AC_CHECK_LIB(m, cos)'.
+	  Suggested by Sylvain Beucler <beuc@beuc.net>.
+
+2014-07-04  Ludovic Courtès  <ludo@gnu.org>
+
+	Recognize arm-* target triplets.
+	Reported by Sylvain Beucler <beuc@beuc.net>.
+
+	* module/system/base/target.scm (cpu-endianness): Add case where CPU is
+	  "arm".
+	* test-suite/tests/asm-to-bytecode.test ("cross-compilation")["arm-unknown-linux-androideabi"]:
+	  New test.
+
+2014-07-03  Eli Zaretskii  <eliz@gnu.org>
+
+	Remove trailing whitespace from ports.test.
+
+	Untabify some test files.
+	* test-suite/tests/ports.test: Untabify.
+	* test-suite/tests/posix.test: Untabify.
+	* test-suite/tests/r6rs-files.test: Untabify.
+
+2014-07-03  Eli Zaretskii  <eliz@gnu.org>
+
+	Fix problems with Windows file names that use backslashes.
+	* libguile/load.c (scm_i_mirror_backslashes): New function.
+	  (scm_init_load_path): Call it to produce MS-Windows file names
+	  with forward slashes.
+	  (FILE_NAME_SEPARATOR_STRING): Define as "/" on all platforms.
+
+	* libguile/load.h (scm_i_mirror_backslashes): Add prototype.
+
+	* libguile/init.c (scm_boot_guile): Call scm_i_mirror_backslashes
+	  on argv[0].
+
+	* libguile/filesys.c (scm_getcwd): Call scm_i_mirror_backslashes
+	  on the directory name returned by getcwd.
+
+	* test-suite/tests/ports.test ("file name separators"): New test.
+
+2014-07-03  Eli Zaretskii  <eliz@gnu.org>
+
+	Fix calculation of CPU set size for getaffinity.
+	* libguile/posix.c (cpu_set_to_bitvector): Use CPU_SETSIZE, not
+	  sizeof, to compute the size of the CPU set.
+
+	Provide a more reasonable default value for stack limit on MS-Windows.
+	* libguile/debug.c (init_stack_limit) [__MINGW32__]: Use
+	  VirtualQuery to compute the stack limit on MS-Windows.
+
+2014-07-03  Eli Zaretskii  <eliz@gnu.org>
+
+	Unconditionally build and test the ice-9/popen module.
+	* module/Makefile.am (ICE_9_SOURCES): Add ice-9/popen.scm.
+	  (ICE_9_SOURCES) [BUILD_ICE_9_POPEN]: Remove conditional addition
+	  of ice-9/popen.scm.
+	  (SCRIPTS_SOURCES): Add scripts/autofrisk.scm and
+	  scripts/scan-api.scm unconditionally.
+	  (SCRIPTS_SOURCES) [BUILD_ICE_9_POPEN]: Remove conditional addition
+	  of scripts/autofrisk.scm and scripts/scan-api.scm.
+
+	* configure.ac: Remove the BUILD_ICE_9_POPEN condition.
+
+	* test-suite/tests/popen.test (if-supported): Don't test for 'fork
+	 feature being supported.
+
+2014-07-02  Eli Zaretskii  <eliz@gnu.org>
+
+		More fixes for deleting files whose ports are not closed.
+		* test-suite/tests/r6rs-files.test: Close the port after
+		using it.
+
+		* test-suite/tests/posix.test ("mkstemp!"): Close the port after
+		using it.
+
+2014-07-02  Eli Zaretskii  <eliz@gnu.org>
+
+		Make 'system*' available on MS-Windows.
+		* libguile/simpos.c (scm_system_star) [!HAVE_FORK]: An
+		implementation of 'system*' for MS-Windows, which doesn't have
+		'fork', but can use 'spawnvp' in this case.
+
+		Fix deletion of ports.test test file on MS-Windows.
+		* test-suite/tests/ports.test ("fdes->port", "seek")
+		("truncate-file"): Close every file and port we open, to avoid
+		failure to delete the test file on MS-Windows when the test is
+		completed.
+
+2014-06-22  Eli Zaretskii  <eliz@gnu.org>
+
+	Fix compilation of scm_nl_langinfo when some nl_langinfo items are missing.
+	* i18n.c (scm_nl_langinfo): Don't assume that both INT_* and
+	  the corresponding non-INT_* items are always either all defined
+	  or all undefined.
+
+2014-06-12  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Improve lack-of-/dev/null detection.
+	Suggested by Eli Zaretskii <eliz@gnu.org>.
+
+	* test-suite/test-suite/lib.scm (%null-device): Test for Windows based
+	  by checking for a drive letter in the current directory name.
+
+2014-06-11  Ludovic Courtès  <ludo@gnu.org>
+	    Eli Zaretskii  <eliz@gnu.org>
+
+	i18n: Adjust tests for Windows.
+	* test-suite/tests/i18n.test (mingw?): New variable.
+	  (%french-locale-name, %french-utf8-locale-name,
+	  %turkish-utf8-locale-name, %german-utf8-locale-name,
+	  %greek-utf8-locale-name): Add name of corresponding Windows codepage,
+	  when MINGW? is true.
+	  (under-turkish-utf8-locale-or-unresolved): Add exception for
+	  "mingw32".
+
+	i18n: Ignore LC_MESSAGES on MinGW.
+	* libguile/locale-categories.h (MESSAGES): Add condition on
+	  !(defined(LC_MAX) && LC_MESSAGES > LC_MAX).
+	* test-suite/tests/i18n.test ("locale objects")["make-locale (2 args,
+	  list)", "make-locale (3 args)", "locale?"]: Use LC_NUMERIC or LC_TIME
+	  instead of LC_MESSAGES.
+
+2014-06-11  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Use NUL instead of /dev/null on MinGW.
+	Reported by Eli Zaretskii <eliz@gnu.org>.
+
+	* test-suite/test-suite/lib.scm (%null-device): New variable.
+	* test-suite/tests/c-api.test (egrep): Use %NULL-DEVICE instead of
+	  /dev/null.
+	* test-suite/tests/popen.test ("open-input-pipe")["no duplicate"]:
+	  Likewise.
+
+2014-06-06  Taylan Ulrich B  <taylanbayirli@gmail.com>
+
+	R6RS library documentation fix
+	* doc/ref/api-modules.texi (R6RS Libraries): Move 'export' before
+	  'import' in the example library form, as required by R6RS.
+
+2014-06-05  Dmitry Bogatov  <KAction@gnu.org>
+
+	Fix typo in `transform-string' doc.
+	* doc/ref/texinfo.texi: Fix single typo.
+
+2014-06-05  Mark H Weaver  <mhw@netris.org>
+
+	Optimize scm_ilength and 'length+'.
+	* libguile/list.c (scm_ilength): Test for SCM_NULL_OR_NIL_P only after
+	  testing scm_is_pair.  Conform to GNU coding standards.
+
+	* libguile/srfi-1.c (scm_srfi1_length_plus): Ditto.
+
+2014-06-05  Mark H Weaver  <mhw@netris.org>
+
+	test-guild-compile: Increase sleep time before sending SIGINT.
+	* test-suite/standalone/test-guild-compile: Increase sleep time
+	  before sending SIGINT, for slow machines.
+
+2014-06-05  Mark H Weaver  <mhw@netris.org>
+
+	Avoid quadratic expansion time in 'and' and 'or' macros.
+	Fixes <http://bugs.gnu.org/17147>.
+	Reported by David Kastrup <dak@gnu.org>.
+
+	* module/ice-9/boot-9.scm (and, or): Use dotted tail instead of ellipsis
+	  in patterns.
+
+2014-06-03  Ludovic Courtès  <ludo@gnu.org>
+
+	'guild compile' doesn't leave temporary files behind it.
+	* module/scripts/compile.scm (compile): Add 'sigaction' call.
+	* test-suite/standalone/test-guild-compile: New file.
+	* test-suite/standalone/Makefile.am (check_SCRIPTS, TESTS): Add it.
+
+2014-06-02  Mark H Weaver  <mhw@netris.org>
+
+	SRFI-1 'length+' raises an error unless passed a proper or circular list.
+	Fixes <http://bugs.gnu.org/17296>.
+
+	* libguile/srfi-1.c (scm_srfi1_length_plus): Rewrite to raise an error
+	  unless passed a proper or circular list, based on code from
+	  'scm_ilength'.
+
+	* test-suite/tests/srfi-1.test (length+): Add tests.
+
+2014-06-02  Mark H Weaver  <mhw@netris.org>
+
+	Mark system async functions as SCM_API.
+	Fixes <http://bugs.gnu.org/17661>.
+	Reported and fixed by Chris Vine <chris@cvine.freeserve.co.uk>.
+
+	* libguile/async.h (scm_c_call_with_blocked_asyncs)
+	  (scm_c_call_with_unblocked_asyncs, scm_dynwind_block_asyncs)
+	  (scm_dynwind_unblock_asyncs): Mark as SCM_API.
+
+	* THANKS: Add Chris Vine to fixes section.
+
+2014-05-28  Ludovic Courtès  <ludo@gnu.org>
+
+	Slightly simplify 'scm_open_process'.
+	* libguile/posix.c (scm_open_process): Call 'scm_fdes_to_port' with the
+	  '0' flag, and remove 'scm_setvbuf' calls.
+
+2014-05-28  Ludovic Courtès  <ludo@gnu.org>
+
+	rdelim: Speed up 'read-string' (aka. 'get-string-all'.)
+	This yields a 20% improvement on the "read-string" benchmark.
+
+	* module/ice-9/rdelim.scm (read-string): Rewrite as a 'case-lambda',
+	  with a tight loop around 'read-char', and without using
+	  'read-string!'.
+	* test-suite/tests/rdelim.test ("read-string")["longer than 100 chars,
+	  with limit"]: New test.
+	* benchmark-suite/benchmarks/ports.bm ("rdelim")["read-string"]: New
+	  benchmark.
+
+2014-05-28  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Add test for <http://bugs.gnu.org/17466>.
+	* test-suite/tests/r6rs-ports.test ("7.2.8 Binary
+	  Input")("http://bugs.gnu.org/17466"): New test.
+
+2014-05-28  Ludovic Courtès  <ludo@gnu.org>
+
+	Fix shrinking of contiguous bytevectors, as from 'get-bytevector-n'.
+	Fixes <http://bugs.gnu.org/17466>.
+	Reported by J Kalbhenn <jkal@posteo.eu>.
+
+	* libguile/bytevectors.c (scm_c_shrink_bytevector): When BV is
+	  contiguous, add use of 'SCM_BYTEVECTOR_SET_CONTENTS'.
+
+2014-05-23  Ludovic Courtès  <ludo@gnu.org>
+
+	web: Keep the default size for the client's in-kernel receive buffer.
+	Fixes <http://bugs.gnu.org/15368>.
+
+	* module/web/client.scm (open-socket-for-uri): Remove call to
+	  'setsockopt'.  Contrary to what the comment said, its effect was to
+	  shrink the receive buffer from 124 KiB (the default size, per
+	  /proc/sys/net/core/rmem_default on Linux-based systems) to 12 KiB.
+
+2014-05-21  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Add test for _IOLBF.
+	* test-suite/tests/ports.test ("pipe, fdopen, and _IOLBF"): New test.
+
+2014-05-16  Ludovic Courtès  <ludo@gnu.org>
+
+	Silence GCC warning.
+	* libguile/fports.c (scm_setvbuf): Initialize 'drained'.  GCC 4.9 raises
+	  a "may be used uninitialized warning" for 'drained', because it can't
+	  tell that 'drained' is initialized anytime NDRAINED > 0.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Prefer foreign objects over smobs in manual
+	* doc/ref/api-memory.texi (Memory Blocks): Recommend against
+	  scm_gc_free.  Refer to foreign objects instead of smobs.  Remove
+	  discussion of scm_must_malloc et al.
+
+	* doc/ref/guile.texi (API Reference): Rename SMOB menu item.
+
+	* doc/ref/libguile-snarf.texi (Function Snarfing): Update example to not
+	  refer to smobs.
+	* doc/ref/tools.texi (How guile-snarf works): Likewise.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Add new standalone tests to gitignore
+	* .gitignore: Add entries.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Remove doc/example-smob/
+	* doc/example-smob/: Remove example.  It's smaller than it used to be in
+	  Guile 1.8, and with foreign objects there's practically nothing
+	  interesting to test.
+
+	* doc/oldfmt.c: Remove this hoary thing.
+
+	* doc/README:
+	* doc/Makefile.am: Update.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Remove SMOB tutorial; update manual.
+	* doc/ref/libguile-smobs.texi: Remove; this tutorial is superseded by
+	  libguile-foreign-objects.
+
+	* doc/ref/libguile-foreign-objects.texi: Proofreading.
+
+	* doc/ref/libguile-program.texi: Update Dia examples to refer to foreign
+	  objects.
+
+	* doc/ref/libguile-concepts.texi (Garbage Collection): Update to
+	  accurately describe the BDW-GC, and to avoid reference to mark
+	  functions.
+
+	* doc/ref/guile.texi: Remove libguile-smobs, and reword API menu.
+
+	* doc/ref/api-utility.texi (Equality): Mention GOOPS instead of SMOBs.
+
+	* doc/ref/api-smobs.texi (Smobs): Describe as a legacy interface.
+	  Exhort readers against the writing of mark functions.
+
+	* doc/ref/api-foreign-objects.texi (Foreign Objects): Proofreading.
+
+	* doc/ref/api-control.texi (Catch): Fix ref to point to foreign
+	  objects.
+
+	* doc/ref/Makefile.am: Remove libguile-smobs.texi.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Add foreign object documentation
+	* doc/ref/api-foreign-objects.texi:
+	* doc/ref/libguile-foreign-objects.texi: New files.
+
+	* doc/ref/guile.texi:
+	* doc/ref/Makefile.am: Link new files into docs.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Add more foreign object interfaces
+	* libguile/foreign-object.c:
+	* libguile/foreign-object.h (scm_make_foreign_object_1)
+	  (scm_make_foreign_object_2, scm_make_foreign_object_3)
+	  (scm_make_foreign_object_n): Change to take void * arguments, and to
+	  add a comment to the header indicating that these are convenience
+	  constructors.
+
+	* libguile/foreign-object.c:
+	* libguile/foreign-object.h (scm_foreign_object_unsigned_ref)
+	  (scm_foreign_object_unsigned_set_x): New functions, equivalent to the
+	  old scm_foreign_object_ref and scm_foreign_object_set_x.
+
+	* libguile/foreign-object.c:
+	* libguile/foreign-object.h (scm_foreign_object_signed_ref)
+	  (scm_foreign_object_signed_set_x): New functions taking
+	  scm_t_signed_bits.
+
+	* libguile/foreign-object.c:
+	* libguile/foreign-object.h (scm_foreign_object_ref)
+	  (scm_foreign_object_set_x): New functions that take void*.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Avoid non-constant struct initializers
+	* libguile/foreign-object.c (scm_make_foreign_object_2):
+	  (scm_make_foreign_object_3): Avoid non-constant struct initializers.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	Add scm_make_foreign_object_0; optimize scm_make_foreign_object_n.
+	* libguile/foreign-object.c (scm_make_foreign_object_0): New function.
+	  (scm_make_foreign_object_n): Pre-fetch layout_chars.
+
+	* libguile/foreign-object.h: Add scm_make_foreign_object_0.
+
+2014-04-28  Andy Wingo  <wingo@pobox.com>
+
+	New foreign object facility, to replace SMOBs
+	* libguile/foreign-object.c:
+	* libguile/foreign-object.h:
+	* module/system/foreign-object.scm:
+	* test-suite/standalone/test-foreign-object-c.c:
+	* test-suite/standalone/test-foreign-object-scm: New files.
+
+	* test-suite/standalone/Makefile.am:
+	* module/Makefile.am:
+	* libguile/Makefile.am: Add new files.
+
+	* libguile.h: Add foreign-object.h.
+	* libguile/init.c (scm_i_init_guile): Call scm_register_foreign_object.
+
+2014-04-27  Andy Wingo  <wingo@pobox.com>
+
+	Fix foreign slot initialization and access
+	* libguile/goops.c (scm_sys_initialize_object): Refactor initialization
+	  so that we don't ref uninitialized slots before initializing them.
+	  This allows foreign slots, whose initial value is 0, to be initialized
+	  via #:init-form.
+
+	* module/oop/goops.scm (@slot-ref, @slot-set!): Remove definitions.
+	  Change callers to use struct-ref and struct-set!.  slot-ref and
+	  slot-set! were only marginally more efficient and were much more
+	  dangerous.  This change allows the standard accessors to work on
+	  foreign slots; that was not the case before, as the 'u' fields of the
+	  struct were read as if they were 'p' slots.
+	* module/language/tree-il/compile-glil.scm (lambda): Remove support for
+	  compiling @slot-ref/@slot-set!.  These were private to GOOPS.
+
+	* test-suite/tests/goops.test ("active-slot"): Update to not expect a
+	  ref before initialization.
+	  ("foreign slots"): Add tests.
+
+2014-04-26  Andy Wingo  <wingo@pobox.com>
+
+	Add interface to disable automatic finalization
+	* libguile/finalizers.h:
+	* libguile/finalizers.c (run_finalizers_async_thunk): Call the new
+	  scm_run_finalizers helper.
+	  (scm_set_automatic_finalization_enabled, scm_run_finalizers): New
+	  functions.
+	  (scm_init_finalizers): Only set a finalizer notifier if automatic
+	  finalization is enabled.
+
+	* doc/ref/libguile-smobs.texi (Garbage Collecting Smobs): Add discussion
+	  of concurrency.
+
+	* doc/ref/api-smobs.texi (Smobs): Document new functions.
+
+2014-04-25  Mark H Weaver  <mhw@netris.org>
+
+	Support weak vectors, arrays, and bitvectors in (system base types).
+	* module/system/base/types.scm (%tc7-wvect, %tc7-array, %tc7-bitvector):
+	  New variables.
+	  (cell->object): Add cases for weak vectors, arrays, and bitvectors.
+
+	print: avoid triggering deprecation warnings when printing weak vectors.
+	* libguile/print.c (iprin1): Use 'scm_c_weak_vector_ref' to access
+	  elements of weak vectors.
+
+2014-04-24  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Clean up rules for meta/{guild,guile-config}.
+	* meta/Makefile.am (guile-config, guild): Avoid useless 'cat'
+	  invocation'.  Quote all occurrences of '@'.
+	  Suggested by Eric Blake <eblake@redhat.com>.
+
+	build: Honor program name transformation in 'guild'.
+	* configure.ac: Remove erroneous 'guile_program_name' substitute; see
+	  <https://lists.gnu.org/archive/html/autoconf/2014-04/msg00010.html>
+	  for details.  Remove 'meta/guild' config file.
+	* meta/Makefile.am (guild): New target.
+	  (CLEANFILES): Add 'guild'.
+	* meta/guild.in: Remove 'prefix' and 'exec_prefix' definitions; use
+	  @installed_guile@.
+
+2014-04-22  Dmitry Bogatov  <KAction@gnu.org>
+
+	Fix memory leak on `realloc' failure
+	* libguile/script.c (realloc0): New helper.
+	  (script_read_arg, scm_get_meta_args): Use realloc0, not realloc.
+
+2014-04-16  Mark H Weaver  <mhw@netris.org>
+
+	Update libgc URL in README.
+	* README: Update libgc URL.  Suggested by Ian Grant
+	  <ian.a.n.grant@googlemail.com>.
+
+2014-04-14  Andy Wingo  <wingo@pobox.com>
+
+	Readline history preserves newlines
+	* guile-readline/ice-9/readline.scm (make-readline-port): Preserve
+	  newlines.  This preserves the semantics of history entries that
+	  contain until-end-of-line comments using `;'.
+
+2014-04-01  David Kastrup  <dak@gnu.org>
+
+	Make reverse! forego the cost of SCM_VALIDATE_LIST
+	* libguile/list.c (scm_reverse_x): Do not validate first argument to
+	  reverse! in advance.  Instead undo reversal in error case.
+
+2014-03-23  Nathaniel Alderson  <alderson@gmail.com>
+
+	Calculate usecs correctly in thread-sleep!
+	* module/srfi/srfi-18.scm (thread-sleep!): Correctly compute
+	  microseconds.
+
+	* test-suite/tests/srfi-18.test: Add test.
+
 2014-03-20  Ludovic Courtès  <ludo@gnu.org>
 
 	Bump version number for 2.0.11.
