@@ -905,6 +905,7 @@ libguile-2.0.so.22:scm_i_long2big
 libguile-2.0.so.22:scm_i_make_transcoded_port
 libguile-2.0.so.22:scm_i_makinum
 libguile-2.0.so.22:scm_i_mask_ints
+libguile-2.0.so.22:scm_i_mkstemp
 libguile-2.0.so.22:scm_i_new_double_smob
 libguile-2.0.so.22:scm_i_new_smob
 libguile-2.0.so.22:scm_i_new_smob_with_mark_proc

@@ -1,3 +1,357 @@
+2016-10-12  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Compress with lzip too.
+	* configure.ac: Add 'dist-lzip' Automake option.
+
+	build: Check for /gnu/store file names upon "make dist".
+	* Makefile.am (assert-no-store-file-names): New rule, taken from Guix.
+	(dist-hook): Depend on it.
+
+	Bump version number to 2.0.13.
+	* GUILE-VERSION (GUILE_MICRO_VERSION): Increment.
+	(LIBGUILE_INTERFACE_REVISION): Increment.
+
+	Update 'NEWS'.
+
+2016-10-12  Ludovic Courtès  <ludo@gnu.org>
+
+	build: Avoid use of Bash's $(...) construct in 'configure'.
+	This is a followup to be8be776df4dd77112b5d9b88610cc9b67a68645.
+
+	* acinclude.m4 (GUILE_CHECK_GUILE_FOR_BUILD): Use backquotes instead of
+	$(...).
+
+2016-10-12  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Add REPL server test for CVE-2016-8606.
+	This is a followup to 08c021916dbd3a235a9f9cc33df4c418c0724e03.
+
+	* test-suite/tests/00-repl-server.test: New file.
+	* test-suite/Makefile.am (SCM_TESTS): Add it.
+
+2016-10-11  Mark H Weaver  <mhw@netris.org>
+	    Ludovic Courtès  <ludo@gnu.org>
+
+	REPL Server: Guard against HTTP inter-protocol exploitation attacks.
+	Reported by Christopher Allan Webber <cwebber@dustycloud.org>
+
+	This commit adds protection to Guile's REPL servers against HTTP
+	inter-protocol exploitation attacks, a scenario whereby an attacker can,
+	via an HTML page, cause a web browser to send data to TCP servers
+	listening on a loopback interface or private network.  See
+	<https://en.wikipedia.org/wiki/Inter-protocol_exploitation> and
+	<https://www.jochentopf.com/hfpa/hfpa.pdf>, The HTML Form Protocol
+	Attack (2001) by Tochen Topf <jochen@remote.org>.
+
+	Here we add a procedure to 'before-read-hook' that looks for a possible
+	HTTP request-line in the first line of input from the client socket.  If
+	present, the socket is drained and closed, and a loud warning is written
+	to stderr (POSIX file descriptor 2).
+
+	* module/system/repl/server.scm: Add 'maybe-check-for-http-request'
+	to 'before-read-hook' when this module is loaded.
+	(with-temporary-port-encoding, with-saved-port-line+column)
+	(drain-input-and-close, permissive-http-request-line?)
+	(check-for-http-request, guard-against-http-request)
+	(maybe-check-for-http-request): New procedures.
+	(serve-client): Use 'guard-against-http-request'.
+	* module/system/repl/coop-server.scm (start-repl-client): Use
+	'guard-against-http-request'.
+	* doc/ref/guile-invoke.texi (Command-line Options): In the description
+	of the --listen option, make the security warning more prominent.
+	Mention the new protection added here.  Recommend using UNIX domain
+	sockets for REPL servers.  "a path to" => "the file name of".
+
+2016-10-11  Ludovic Courtès  <ludo@gnu.org>
+
+	tests: Use the "normalized codeset" in locale names.
+	* test-suite/tests/i18n.test (%french-locale-name)
+	(%french-utf8-locale-name, %turkish-utf8-locale-name)
+	(%german-utf8-locale-name, %greek-utf8-locale-name): Use the normalized
+	codeset for ISO-8859-1 and UTF-8.
+
+	Treat 'SIG_IGN' as a pointer.
+	* libguile/posix.c (scm_system_star): Cast 'SIG_IGN' to
+	'scm_t_uintptr_t' and use 'scm_from_uintptr_t'.  This fixes an
+	'int-conversion' warning with GCC 6.2.
+
+	Add 'scm_to_uintptr_t' and 'scm_from_uintptr_t'.
+	* libguile/numbers.h (scm_to_uintptr_t, scm_from_uintptr_t): New
+	macros.
+	* doc/ref/api-data.texi (Integers): Document them.
+	* NEWS: Mention it.
+
+2016-10-11  Ludovic Courtès  <ludo@gnu.org>
+
+	Remove 'umask' calls from 'mkdir'.
+	Fixes <http://bugs.gnu.org/24659>.
+
+	* libguile/filesys.c (SCM_DEFINE): Remove calls to 'umask' when MODE is
+	unbound; instead, use 0777 as the mode.  Update docstring to clarify
+	this.
+	* doc/ref/posix.texi (File System): Adjust accordingly.
+	* NEWS: Mention it.
+
+2016-09-09  Mark H Weaver  <mhw@netris.org>
+
+	Check for closed port in 'port-encoding' and 'set-port-encoding!'.
+	* libguile/ports.c (scm_port_encoding, scm_set_port_encoding_x): Use
+	SCM_VALIDATE_OPPORT.
+
+	http: Do not use 'eq?' to compare characters in parse-request-uri.
+	* module/web/http.scm (parse-request-uri): Use 'eqv?' to compare
+	characters.
+
+2016-08-31  Andy Wingo  <wingo@pobox.com>
+
+	Move system* to posix.c, impl on open-process
+	* libguile/simpos.c: Trim includes.
+	  (scm_system_star): Move to posix.c.
+	* libguile/simpos.h (scm_system_star): Remove.
+	* libguile/posix.h (scm_system_star): Add.
+	* libguile/posix.c (scm_system_star): Move here and implement in terms
+	  of open-process.  This lets system* work on Windows.  Inspired by a
+	  patch by Eli Zaretskii.
+	  (start_child): Exit with 127 if the command isn't found.
+
+2016-08-11  Mark H Weaver  <mhw@netris.org>
+
+	build: .x and .doc files depend on generated includes.
+	Fixes <https://bugs.gentoo.org/show_bug.cgi?id=590528>.
+
+	* libguile/Makefile.am (BUILT_INCLUDES): New variable.
+	(BUILT_SOURCES): Put .i and other generated .h to BUILT_INCLUDES.
+	(DOT_X_FILES, EXTRA_DOT_X_FILES, DOT_DOC_FILES, EXTRA_DOT_DOC_FILES):
+	Depend on $(BUILT_INCLUDES), in place of scmconfig.h which is included
+	in $(BUILT_INCLUDES).
+
+2016-08-11  Mark H Weaver  <mhw@netris.org>
+
+	Revert "Snarfing .x depends on built headers"
+	This reverts commit edd6d6e2805894e21afe51276d1af65d5395180d.
+
+	As reported at <https://bugs.gentoo.org/show_bug.cgi?id=590528#c10>,
+	that commit failed to fix the bug.
+
+	That commit was based on the mistaken belief that the make rule syntax
+	".c.x: $(BUILT_INCLUDES)" means the same as ".c.x:" but with the added
+	prerequisites "$(BUILT_INCLUDES)".  However, as explained in section
+	10.7 (Old-Fashioned Suffix Rules) of the GNU Make manual:
+
+	      Suffix rules cannot have any prerequisites of their own.  If they
+	   have any, they are treated as normal files with funny names, not as
+	   suffix rules.  Thus, the rule:
+
+	        .c.o: foo.h
+	                $(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
+
+	   tells how to make the file '.c.o' from the prerequisite file 'foo.h',
+	   and is not at all like the pattern rule:
+
+	        %.o: %.c foo.h
+	                $(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
+
+	   which tells how to make '.o' files from '.c' files, and makes all
+	   '.o' files using this pattern rule also depend on 'foo.h'.
+
+2016-08-08  James Clarke  <jrtc27@jrtc27.com>
+
+	Recognize alpha as compilation target
+	* module/system/base/target.scm (cpu-endianness): Add case for "alpha".
+	(triplet-pointer-size): Likewise.
+
+2016-08-08  sirgazil  <felipe.lopez@openmailbox.org>
+
+	Fix typo about variable definitions
+	* doc/ref/api-binding.texi (Top Level Variable Definitions): Fix typo.
+
+2016-08-08  Ethan Stefan Day  <esday@ethan-stefan.net>
+
+	Documentation fixes
+	* doc/ref/api-compound.texi:
+	* doc/ref/api-control.texi:
+	* doc/ref/api-data.texi: Fix typos and clarify.
+
+2016-08-07  David Kastrup  <dak@gnu.org>
+
+	Let assv/assoc shortcircuit to assq where feasible
+	* libguile/alist.c (scm_sloppy_assv, scm_sloppy_assoc):
+	  (scm_assv, scm_assoc): Shortcircuit to scm_assq where feasible.
+
+2016-08-07  Andy Wingo  <wingo@pobox.com>
+
+	Fix iconv encoding of long strings
+	* libguile/print.c (display_string_using_iconv): If the encoding the
+	  full utf8 buffer would overflow the output buffer, just keep trucking
+	  instead of erroring.  Fixes #22667.
+	* test-suite/tests/iconv.test ("round-trip"): Add some tests.
+
+2016-08-07  Marek Vasut  <marex@denx.de>
+
+	Recognize nios2 as compilation target
+	Add support for the nios2 architecture.
+
+2016-08-07  Andy Wingo  <wingo@pobox.com>
+
+	Capture full path to GUILE_FOR_BUILD.
+	* acinclude.m4: Capture full path to GUILE_FOR_BUILD.  Fixes #22342.
+
+2016-08-07  Calvin Heim  <frofroggy@gmail.com>
+
+	Fix grammar in api-compound.texi
+	* doc/ref/api-compound.texi: Fix grammar.
+
+2016-08-07  sirgazil  <felipe.lopez@openmailbox.org>
+
+	Fix typo about pattern variables
+	* doc/ref/sxml-match.texi (Matching XML Elements): Fix typo.
+
+2016-08-07  Andy Wingo  <wingo@pobox.com>
+
+	Manual recommends against SRFI-10
+	* doc/ref/srfi-modules.texi (SRFI-10): Deprecate, or at least recommend
+	  against.
+
+	Snarfing .x depends on built headers
+	* libguile/Makefile.am (BUILT_INCLUDES): New variable.
+	  (BUILT_SOURCES): Put .i and other generated .h to BUILT_INCLUDES.
+	  (.c.x, .c.doc): Depend on BUILT_INCLUDES.  Fixes
+	  https://bugs.gentoo.org/show_bug.cgi?id=590528.
+
+2016-08-04  Ludovic Courtès  <ludo@gnu.org>
+
+	texinfo: Remove unnecessary (oop goops) dependency.
+	* module/texinfo/string-utils.scm: Remove #:use-module (oop goops).
+
+2016-07-24  Eli Zaretskii  <eliz@gnu.org>
+
+	Avoid compilation warnings about alloca in read.c
+	* libguile/read.c: Include alloca.h.
+
+2016-07-24  Andy Wingo  <wingo@pobox.com>
+
+	Fix --without-threads against threaded BDW-GC
+	* libguile/gc.c (scm_storage_prehistory): Prevent BDW-GC from spawning
+	  marker threads if Guile was built without threading support.
+
+	Reimplement null-threads as inline functions
+	* libguile/null-threads.h: Reimplement null-threads stubs for pthread
+	  data types, initializers, and functions in terms of types and inline
+	  functions instead of CPP macros.  Fixes unused-value warnings, and
+	  tightens things up in general.
+	  (scm_i_pthread_cleanup_push, scm_i_pthread_cleanup_pop): Remove these,
+	  as they were unused and incorrect -- they would never run the cleanup
+	  handler even if 1 was passed to pop.
+
+2016-07-23  Andy Wingo  <wingo@pobox.com>
+
+	Use non-deprecated HAVE_STRUCT_TM_TM_ZONE
+	* libguile/stime.c: Change uses of the deprecated HAVE_TM_ZONE to the
+	  new HAVE_STRUCT_TM_TM_ZONE.
+
+	Use gnulib for basename / dirname
+	* libguile/filesys.c (scm_dirname, scm_basename): Rewrite to use
+	  gnulib's dirname-lgpl.
+
+	Gnulib: Add dirname-lgpl.
+	* lib/Makefile.am:
+	* m4/gnulib-cache.m4:
+	* m4/gnulib-comp.m4: Add dirname-lgpl.
+
+2016-07-22  Ludovic Courtès  <ludo@gnu.org>
+
+	doc: Add unquote and unquote-splicing examples.
+	Suggested by Vincent Legoll <vincent.legoll@gmail.com>.
+
+	* doc/ref/api-evaluation.texi (Expression Syntax): Add an unquote and an
+	unquote-splicing example.
+
+2016-07-16  Eli Zaretskii  <eliz@gnu.org>
+
+	Untabify posix-w32.c
+
+	Improve process handling on MS-Windows
+	* libguile/posix-w32.c: Include gc.h and threads.h.
+	(proc_record): New structure tag.
+	<procs, proc_size>: New static variables.
+	(find_proc, proc_handle, record_proc, delete_proc): New utility
+	functions.
+	(start_child): Return value is now pid_t, as it is on Posix
+	platforms.  Record the new process and returns its PID, instead of
+	returning a handle.  Fix the recursive call.
+	(waitpid, kill, getpriority, setpriority, sched_getaffinity)
+	(sched_setaffinity): Look up the PID in the recorded subprocesses
+	before trying to open a process that is not our subprocess.  Make
+	sure any open handle is closed before returning, unless it's our
+	subprocess.
+
+2016-07-16  Andy Wingo  <wingo@pobox.com>
+
+	Fix mkstemp! with 1 argument
+	* libguile/filesys.c (scm_i_mkstemp): Add SCM_OPN to flags if mode
+	  argument not given.
+
+2016-07-16  Andy Wingo  <wingo@pobox.com>
+
+	Allow mkstemp! to have optional "mode" argument
+	* m4/mkstemp.m4: Remove.
+	* lib/mkstemp.c: Remove.
+	* lib/mkostemp.c: New file.
+	* m4/mkostemp.m4: New file.
+	* lib/Makefile.am:
+	* m4/gnulib-cache.m4:
+	* m4/gnulib-comp.m4: Remove mkstemp module, replace with mkostemp.
+
+	* libguile/fports.h:
+	* libguile/fports.c (scm_i_mode_to_open_flags): Factor out helper to
+	  parse mode string to open flags.
+	  (scm_open_file_with_encoding): Use the new helper.
+	* libguile/filesys.c:
+	  (scm_i_mkstemp): Adapt to take optional second argument, being a mode
+	  string.  Use mkostemp.
+	  (scm_mkstemp): Backwards compatible shim that calls scm_i_mkstemp.
+
+	* doc/ref/posix.texi:
+	* NEWS: Update.
+
+	* module/system/base/compile.scm (call-with-output-file/atomic): Pass
+	  "wb" as mode, to cause O_BINARY to be added on MinGW.
+
+2016-07-16  Andy Wingo  <wingo@pobox.com>
+
+	Fix bug compiling fixpoint combinator
+	* module/language/tree-il/peval.scm (<operand>): Rename "alias-value"
+	  field to "alias", which is now an operand and not an expression.
+	  This allows the operand to capture its environment; before, the
+	  alias was being visited in its use environment instead of its
+	  definition environment.
+	  (peval): Adapt to operand change.
+	* test-suite/tests/peval.test ("partial evaluation"): New test.
+
+2016-07-16  Ricardo Wurmus  <rekado@elephly.net>
+
+	doc: Do not gender the programmer.
+	* doc/ref/api-foreign.texi: Replace "his" with "their".
+	* doc/ref/sxml.texi: Likewise.
+
+2016-07-16  Eli Zaretskii  <eliz@gnu.org>
+
+	Update uname implementation in posix-w32
+	* libguile/posix-w32.c (uname): Update to modern processors (ia64 and
+	  x86_64) and OS versions (Vista to Windows 10).  Delete trailing
+	  whitespace.
+
+2016-07-16  Andy Wingo  <wingo@pobox.com>
+
+	Fix unused static variables in net_db.c
+	* libguile/net_db.c (SCM_DEFINE_CONSTANT): New helper.  Use it to
+	  define constants and avoid the unneeded static variables that were
+	  used before, named "sym_" but actually holding variables.  Thanks to
+	  Eli Zaretskii for the report.
+
+	Fix MinGW build error
+	* configure.ac: Fix for recent rename of win32-uname.c to posix-w32.c.
+
 2016-07-14  Andy Wingo  <wingo@pobox.com>
 
 	Bump version number to 2.0.12
