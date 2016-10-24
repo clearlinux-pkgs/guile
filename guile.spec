@@ -4,7 +4,7 @@
 #
 Name     : guile
 Version  : 2.0.13
-Release  : 13
+Release  : 14
 URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.0.13.tar.gz
 Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.0.13.tar.gz
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
@@ -787,4 +787,5 @@ rm -rf %{buildroot}
 
 %files lib
 %defattr(-,root,root,-)
+%exclude /usr/lib64/libguile-2.0.so.22.8.1-gdb.scm
 /usr/lib64/*.so.*
