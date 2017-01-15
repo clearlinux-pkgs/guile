@@ -1,3 +1,4 @@
 # This file contains the output files that need %exclude. Full path
 # names, one per line.
+/usr/lib64/libguile-2.0.so.22.8.0-gdb.scm
 /usr/lib64/libguile-2.0.so.22.8.1-gdb.scm
