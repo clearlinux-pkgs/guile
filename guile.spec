@@ -6,7 +6,7 @@
 #
 Name     : guile
 Version  : 2.0.13
-Release  : 15
+Release  : 16
 URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.0.13.tar.gz
 Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.0.13.tar.gz
 Source99 : ftp://ftp.gnu.org/gnu/guile/guile-2.0.13.tar.gz.sig
