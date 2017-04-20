@@ -5,14 +5,14 @@
 # Source0 file verified with key 0xDDC0F5358812F8F2 (wingo@gnu.org)
 #
 Name     : guile
-Version  : 2.2.0
-Release  : 18
-URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.2.0.tar.gz
-Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.2.0.tar.gz
-Source99 : ftp://ftp.gnu.org/gnu/guile/guile-2.2.0.tar.gz.sig
+Version  : 2.2.1
+Release  : 19
+URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.2.1.tar.xz
+Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.2.1.tar.xz
+Source99 : ftp://ftp.gnu.org/gnu/guile/guile-2.2.1.tar.xz.sig
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
 Group    : Development/Tools
-License  : GFDL-1.3 GPL-3.0 LGPL-3.0
+License  : GPL-3.0 LGPL-3.0
 Requires: guile-bin
 Requires: guile-lib
 Requires: guile-data
@@ -28,7 +28,7 @@ BuildRequires : sed
 BuildRequires : texinfo
 
 %description
-This is version 2.0 of Guile, Project GNU's extension language library.
+This is version 2.2 of Guile, Project GNU's extension language library.
 Guile is an implementation of the Scheme programming language, packaged
 as a library that can be linked into applications to give them their own
 extension language.  Guile supports other languages as well, giving
@@ -81,11 +81,14 @@ lib components for the guile package.
 
 
 %prep
-%setup -q -n guile-2.2.0
+%setup -q -n guile-2.2.1
 
 %build
+export http_proxy=http://127.0.0.1:9/
+export https_proxy=http://127.0.0.1:9/
+export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1489937009
+export SOURCE_DATE_EPOCH=1492695576
 %configure --disable-static
 make V=1  %{?_smp_mflags}
 
@@ -93,11 +96,11 @@ make V=1  %{?_smp_mflags}
 export LANG=C
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
-export no_proxy=localhost
+export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1489937009
+export SOURCE_DATE_EPOCH=1492695576
 rm -rf %{buildroot}
 %make_install
 
@@ -164,6 +167,7 @@ rm -rf %{buildroot}
 /usr/lib64/guile/2.2/ccache/ice-9/rw.go
 /usr/lib64/guile/2.2/ccache/ice-9/safe-r5rs.go
 /usr/lib64/guile/2.2/ccache/ice-9/safe.go
+/usr/lib64/guile/2.2/ccache/ice-9/sandbox.go
 /usr/lib64/guile/2.2/ccache/ice-9/save-stack.go
 /usr/lib64/guile/2.2/ccache/ice-9/scm-style-repl.go
 /usr/lib64/guile/2.2/ccache/ice-9/serialize.go
@@ -372,6 +376,7 @@ rm -rf %{buildroot}
 /usr/lib64/guile/2.2/ccache/system/repl/error-handling.go
 /usr/lib64/guile/2.2/ccache/system/repl/repl.go
 /usr/lib64/guile/2.2/ccache/system/repl/server.go
+/usr/lib64/guile/2.2/ccache/system/syntax.go
 /usr/lib64/guile/2.2/ccache/system/vm/assembler.go
 /usr/lib64/guile/2.2/ccache/system/vm/coverage.go
 /usr/lib64/guile/2.2/ccache/system/vm/debug.go
@@ -480,6 +485,7 @@ rm -rf %{buildroot}
 /usr/share/guile/2.2/ice-9/rw.scm
 /usr/share/guile/2.2/ice-9/safe-r5rs.scm
 /usr/share/guile/2.2/ice-9/safe.scm
+/usr/share/guile/2.2/ice-9/sandbox.scm
 /usr/share/guile/2.2/ice-9/save-stack.scm
 /usr/share/guile/2.2/ice-9/scm-style-repl.scm
 /usr/share/guile/2.2/ice-9/serialize.scm
@@ -699,6 +705,7 @@ rm -rf %{buildroot}
 /usr/share/guile/2.2/system/repl/error-handling.scm
 /usr/share/guile/2.2/system/repl/repl.scm
 /usr/share/guile/2.2/system/repl/server.scm
+/usr/share/guile/2.2/system/syntax.scm
 /usr/share/guile/2.2/system/vm/assembler.scm
 /usr/share/guile/2.2/system/vm/coverage.scm
 /usr/share/guile/2.2/system/vm/debug.scm
@@ -869,9 +876,9 @@ rm -rf %{buildroot}
 
 %files lib
 %defattr(-,root,root,-)
-%exclude /usr/lib64/libguile-2.2.so.1.0.0-gdb.scm
 /usr/lib64/guile/2.2/extensions/guile-readline.so
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
 /usr/lib64/libguile-2.2.so.1
-/usr/lib64/libguile-2.2.so.1.0.0
+/usr/lib64/libguile-2.2.so.1.1.0
+/usr/lib64/libguile-2.2.so.1.1.0-gdb.scm

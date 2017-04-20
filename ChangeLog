@@ -1,3 +1,335 @@
+2017-04-19  Andy Wingo  <wingo@pobox.com>
+
+	GNU Guile 2.2.1.
+	* GUILE-VERSION (GUILE_MICRO_VERSION, LIBGUILE_INTERFACE_CURRENT):
+	  (LIBGUILE_INTERFACE_AGE): Increment version.
+
+	Update release docs
+	* doc/release.org: Update for 2.2.
+
+	Update NEWS
+	* NEWS: Update.
+
+2017-04-19  Sergei Trofimovich  <slyfox@gentoo.org>
+
+	guile-snarf: skip -g* arguments to avoid build failure
+	* libguile/guile-snarf.in: skip -g* arguments to avoid failure on
+	  -ggdb3.
+
+	Bug: https://bugs.gentoo.org/608190
+	Bug: http://debbugs.gnu.org/cgi/bugreport.cgi?bug=25803
+
+2017-04-19  Sergei Trofimovich  <slyfox@gentoo.org>
+
+	api-procedures.texi: typo: 'an' -> 'on'
+	* doc/ref/api-procedures.texi: Fix typo.
+
+	Documentation typo tweak
+	* doc/ref/api-data.texi: Tweak 'u+0007' to 'U+0007' (as in the rest of
+	  the table).
+
+2017-04-19  Andy Wingo  <wingo@pobox.com>
+
+	Fix spurious warnings in net_db.c
+	* libguile/guile-func-name-check (/^SCM_DEFINE /): Fix pattern to not
+	  produce spurious warnings.  Thanks to Dale Smith for the suggestion.
+	  Fixes https://bugs.gnu.org/26123.
+
+2017-04-19  Freja Nordsiek  <fnordsie@gmail.com>
+
+	Fixed bug: statprof flat display wasn't writing summary lines to port
+	* module/statprof.scm (statprof-display/flat): fixed bug where summary lines
+	  were written to (current-output-port) instead of the provided port.
+
+2017-04-19  Andy Wingo  <wingo@pobox.com>
+
+	Document guile-2.2 cond-expand feature.
+	* doc/ref/srfi-modules.texi (SRFI-0): Mention guile-2.2 feature.
+
+	Add --with-bdw-gc and update README
+	* README: Update to 2.2.  Add instructions for FreeBSD based on notes
+	  from Matt Wette.
+	* configure.ac: Add --with-bdw-gc argument.
+
+	Fix typo in fold-layout documentation
+	* doc/ref/sxml.texi (SXML Tree Fold): Fix minor typo.  Fixes
+	  https://bugs.gnu.org/26188.
+
+	Add srfi-19 ~f regression test
+	* test-suite/tests/srfi-19.test ("SRFI date/time library"): Add test for
+	  https://bugs.gnu.org/26259.
+
+	Fix date->string ~f operator to not emit leading zeros
+	* module/srfi/srfi-19.scm (directives): Format ~f without leading
+	  zeroes.  Fixes https://bugs.gnu.org/26260.
+	* test-suite/tests/srfi-19.test ("SRFI date/time library"): Add test.
+
+2017-04-19  Andrew Moss  <andrewmoss@pobox.com>
+
+	Fixed bug: ~N mishandles small nanoseconds value
+	Fixes <http://bugs.gnu.org/26261>.
+	Reported by Zefram <zefram@fysh.org>.
+
+	* module/srfi/srfi-19.scm ("define directives"): N padding increased from 7 to 9
+
+	* test-suite/tests/srfi-19.test ("date->string"): New test.
+
+2017-04-19  Andy Wingo  <wingo@pobox.com>
+
+	SRFI-19 current-time-monotonic returns time of right type
+	* module/srfi/srfi-19.scm (current-time-monotonic): Actually return a
+	  time with the correct type.  Fixes #26329.
+
+	Avoid causing GC when lookup up exception handler
+	* libguile/fluids.c (scm_fluid_ref_star): Avoid causing GC.  Possibly
+	  fixes some crashes during out-of-memory conditions (#26351).
+
+	Fix test suite for constant literals change
+	* test-suite/tests/elisp-compiler.test ("List Built-Ins"): Avoid
+	  mutating a literal pair.  If this turns out to be necessary for elisp,
+	  the compiler will have to compile literals to calls to run-time heap
+	  allocations rather than constants.
+
+2017-04-18  Andy Wingo  <wingo@pobox.com>
+
+	Bump objcode version in a compatible way
+	* libguile/_scm.h (SCM_OBJCODE_MINIMUM_MINOR_VERSION): New definition,
+	  indicating the oldest objcode version that we support.
+	  (SCM_OBJCODE_MINOR_VERSION): Bump.
+	* libguile/loader.c (process_dynamic_segment): Support a range of
+	  versions.
+	* module/system/vm/assembler.scm (*bytecode-minor-version*): Bump.
+
+	Add sandboxed evaluation facility
+	* module/ice-9/sandbox.scm: New file.
+	* module/Makefile.am (SOURCES): Add new file.
+	* doc/ref/api-evaluation.texi (Sandboxed Evaluation): New section.
+	* NEWS: Update.
+	* test-suite/tests/sandbox.test: New file.
+	* test-suite/Makefile.am: Add new file.
+
+	Update NEWS
+	* NEWS: Add note about constants and mutation.
+
+	All literal constants are read-only
+	* libguile/array-handle.c (initialize_vector_handle): Add mutable_p
+	  argument.  Unless the vector handle is mutable, null out its
+	  writable_elements member.
+	  (scm_array_get_handle): Adapt to determine mutability of the various
+	  arrays.
+	  (scm_array_handle_elements, scm_array_handle_writable_elements):
+	  Reverse the sense: instead of implementing read-only in terms of
+	  read-write, go the other way around, adding an assertion in the
+	  read-write case that the array handle is mutable.
+	* libguile/array-map.c (racp): Assert that the destination is mutable.
+	* libguile/bitvectors.c (SCM_F_BITVECTOR_IMMUTABLE, IS_BITVECTOR):
+	  (IS_MUTABLE_BITVECTOR): Add a flag to indicate immutability.
+	  (scm_i_bitvector_bits): Fix indentation.
+	  (scm_i_is_mutable_bitvector): New helper.
+	  (scm_array_handle_bit_elements)
+	  ((scm_array_handle_bit_writable_elements): Build writable_elements in
+	  terms of elements.
+	  (scm_bitvector_elements, scm_bitvector_writable_elements): Likewise.
+	  (scm_c_bitvector_set_x): Require a mutable bitvector for the
+	  fast-path.
+	  (scm_bitvector_to_list, scm_bit_count): Use read-only elements()
+	  function.
+	* libguile/bitvectors.h (scm_i_is_mutable_bitvector): New decl.
+	* libguile/bytevectors.c (INTEGER_ACCESSOR_PROLOGUE):
+	  (INTEGER_GETTER_PROLOGUE, INTEGER_SETTER_PROLOGUE):
+	  (INTEGER_REF, INTEGER_NATIVE_REF, INTEGER_SET, INTEGER_NATIVE_SET):
+	  (GENERIC_INTEGER_ACCESSOR_PROLOGUE):
+	  (GENERIC_INTEGER_GETTER_PROLOGUE, GENERIC_INTEGER_SETTER_PROLOGUE):
+	  (LARGE_INTEGER_NATIVE_REF, LARGE_INTEGER_NATIVE_SET):
+	  (IEEE754_GETTER_PROLOGUE, IEEE754_SETTER_PROLOGUE):
+	  (IEEE754_REF, IEEE754_NATIVE_REF, IEEE754_SET, IEEE754_NATIVE_SET):
+	  Setters require a mutable bytevector.
+	  (SCM_BYTEVECTOR_SET_FLAG): New helper.
+	  (SCM_BYTEVECTOR_SET_CONTIGUOUS_P, SCM_BYTEVECTOR_SET_ELEMENT_TYPE):
+	  Remove helpers.
+	  (SCM_VALIDATE_MUTABLE_BYTEVECTOR): New helper.
+	  (make_bytevector, make_bytevector_from_buffer): Use
+	  SCM_SET_BYTEVECTOR_FLAGS.
+	  (scm_c_bytevector_set_x, scm_bytevector_fill_x)
+	  (scm_bytevector_copy_x): Require a mutable bytevector.
+	* libguile/bytevectors.h (SCM_F_BYTEVECTOR_CONTIGUOUS)
+	  (SCM_F_BYTEVECTOR_IMMUTABLE, SCM_MUTABLE_BYTEVECTOR_P): New
+	  definitions.
+	* libguile/bytevectors.h (SCM_BYTEVECTOR_CONTIGUOUS_P): Just access one
+	  bit.
+	* libguile/srfi-4.c (DEFINE_SRFI_4_C_FUNCS): Implement
+	  writable_elements() in terms of elements().
+	* libguile/strings.c (scm_i_string_is_mutable): New helper.
+	* libguile/uniform.c (scm_array_handle_uniform_elements):
+	  (scm_array_handle_uniform_writable_elements): Implement
+	  writable_elements in terms of elements.
+	* libguile/vectors.c (SCM_VALIDATE_MUTABLE_VECTOR): New helper.
+	  (scm_vector_elements, scm_vector_writable_elements): Implement
+	  writable_elements in terms of elements.
+	  (scm_c_vector_set_x): Require a mutable vector.
+	* libguile/vectors.h (SCM_F_VECTOR_IMMUTABLE, SCM_I_IS_MUTABLE_VECTOR):
+	  New definitions.
+	* libguile/vm-engine.c (VM_VALIDATE_MUTABLE_BYTEVECTOR):
+	  (VM_VALIDATE_MUTABLE_VECTOR, vector-set!, vector-set!/immediate)
+	  (BV_BOUNDED_SET, BV_SET): Require mutable bytevector/vector.
+	* libguile/vm.c (vm_error_not_a_mutable_bytevector):
+	  (vm_error_not_a_mutable_vector): New definitions.
+	* module/system/vm/assembler.scm (link-data): Mark residualized vectors,
+	  bytevectors, and bitvectors as being read-only.
+
+	Attempt to mutate residualized literal pair throws exception
+	* libguile/validate.h (SCM_VALIDATE_MUTABLE_PAIR):
+	* libguile/pairs.h (scm_is_mutable_pair): New internal definitions.
+	* libguile/pairs.c (scm_set_car_x, scm_set_cdr_x): Validate mutable
+	  pairs.
+	* libguile/alist.c (scm_assq_set_x, scm_assv_set_x, scm_assoc_set_x):
+	* libguile/list.c (scm_reverse_x, scm_list_set_x, scm_list_cdr_set_x):
+	* libguile/srcprop.c (scm_make_srcprops):
+	* libguile/srfi-1.c (scm_srfi1_append_reverse_x)
+	  (scm_srfi1_delete_duplicates_x):
+	* libguile/symbols.c (scm_symbol_fset_x, scm_symbol_pset_x):
+	* libguile/sort.c (scm_merge_list_x): Use scm_set_car_x / scm_set_cdr_x
+	  instead of the macros, so as to check for mutable pairs.
+	  (SCM_VALIDATE_MUTABLE_LIST): New internal helper macro.
+	  (scm_sort_x, scm_stable_sort_x, scm_sort_list_x): Use
+	  SCM_VALIDATE_MUTABLE_LIST.
+	* libguile/vm-engine.c (VM_VALIDATE_MUTABLE_PAIR): New definition.
+	  (set-car!, set-cdr!): Use VM_VALIDATE_MUTABLE_PAIR.  Fix error message
+	  for set-cdr!.
+
+2017-04-14  Ludovic Courtès  <ludo@gnu.org>
+
+	types: Hide one of the 'bytevector->string' procedures.
+	* module/system/base/types.scm: Hide 'bytevector->string' from (rnrs io
+	ports).
+
+2017-04-04  Michael Gran  <spk121@yahoo.com>
+
+	Only run tests that require fork if it is provided
+	* test-suite/tests/00-repl-server.test (call-with-repl-server): throw if no fork provided
+	* test-suite/tests/00-socket.test (primitive-fork-if-available): new help procedure
+	  (bind/sockaddr, AF_UNIX/SOCK_STREAM): use helper func
+	* test-suite/tests/ports.test ("pipe, fdopen, and line buffering"): throw if no fork provided
+
+2017-04-03  Andy Wingo  <wingo@pobox.com>
+
+	Speed up procedure-minimum-arity for fixed arity
+	* libguile/programs.c (try_parse_arity): Add a case for
+	  assert-nargs-ee/locals.
+
+2017-04-01  Mike Gran  <spk121@yahoo.com>
+
+	fix repl server test to allow for ECONNABORTED
+	For some systems, ECONNABORTED is a failure condition for reading from closed sockets.
+
+	* test-suite/tests/00-repl-server.test (HTTP inter-protocol attack): modified
+
+2017-03-28  Andy Wingo  <wingo@pobox.com>
+
+	Add allow-legacy-syntax-objects? parameter
+	* module/ice-9/psyntax.scm (syntax?): Only recognize legacy syntax
+	  objects if the new allow-legacy-syntax-objects? parameter is true.
+	* module/ice-9/boot-9.scm (allow-legacy-syntax-objects?): New
+	  parameter.
+	* doc/ref/api-macros.texi (Syntax Transformer Helpers): Document the
+	  horrible situation with legacy syntax objects.
+	* NEWS: Add entry.
+
+	Psyntax generates new syntax objects
+	* module/ice-9/psyntax.scm (make-syntax-object): Change to make
+	  new-style syntax objects.
+	* module/ice-9/psyntax-pp.scm: Regenerate.
+	* module/ice-9/compile-psyntax.scm (squeeze-syntax-object): Change to be
+	  functional.
+	  (squeeze-constant): Likewise.
+	  (squeeze-tree-il): Likewise.
+	  (translate-literal-syntax-objects): New pass.  The compiler can embed
+	  literal syntax objects into compiled objects, but syntax can no longer
+	  be read/written; otherwise users could forge syntax objects.  So for
+	  the bootstrap phase, rewrite literal constants to calls to
+	  make-syntax.
+
+	Beginnings of psyntax switch to new syntax objects
+	* module/ice-9/psyntax.scm: Baby steps towards support of a new
+	  representation of syntax objects.
+	* module/ice-9/psyntax-pp.scm: Regenerate.
+
+	Add disjoint syntax object type
+	* libguile/Makefile.am (libguile_@GUILE_EFFECTIVE_VERSION@_la_SOURCES):
+	  (DOT_X_FILES, DOT_DOC_FILES, noinst_HEADERS): Add syntax.c and
+	  syntax.h.
+	* libguile/evalext.c (scm_self_evaluating_p):
+	* libguile/goops.c (class_syntax, scm_class_of, scm_goops_early_init):
+	* libguile/init.c (scm_init_guile):
+	* libguile/print.c (iprin1):
+	* libguile/tags.h (scm_tc7_syntax):
+	* module/oop/goops.scm (<syntax>):
+	* module/system/base/types.scm (%tc7-syntax, cell->object):
+	* module/system/vm/disassembler.scm (code-annotation): Wire up the new
+	  data type.
+	* libguile/syntax.c:
+	* libguile/syntax.h: New files.
+	* module/ice-9/boot-9.scm: Move new definitions to (system syntax
+	  internal).
+	* module/system/syntax.scm (print-syntax): New helper.
+	* module/system/vm/assembler.scm (statically-allocatable?)
+	  (intern-constant, link-data): Arrange to be able to write syntax
+	  objects into images.
+	* module/language/cps/types.scm (&syntax): New type.  Remove
+	  &hash-table; it was never detected, an internal binding, and we need
+	  the bit to avoid going into bignum territory.
+
+	Plumbing changes to rename "syntax-module"
+	* module/ice-9/psyntax.scm (%syntax-module): Rename from syntax-module
+	  in order to make room for a new syntax-module primitive binding.
+	* module/ice-9/psyntax-pp.scm: Regenerate.
+	* module/ice-9/boot-9.scm: Push syntax bindings into an internal
+	  module.
+	* module/system/syntax.scm: New file.
+	* module/Makefile.am (SOURCES): Add system/syntax.scm.
+
+2017-03-23  Mike Gran  <spk121@yahoo.com>
+
+	Git ignore .exe files
+	* .gitignore: add *.exe
+
+2017-03-21  Mike Gran  <spk121@yahoo.com>
+
+	i18n: add international sign positions to %locale-dump
+	* module/ice-9/i18n.scm (%locale-dump): modified
+
+	i18n: locale-positive-separated-by-space? should return bool, not string
+	* libguile/i18n.c (scm_nl_langinfo): unpack INT_P_SEP_BY_SPACE as bool
+	* test-suite/tests/i18n.test (nl-langinfo et al.): new tests
+
+	i18n: add debugging helper procedure for locales
+	* module/ice-9/i18n.scm (%locale-dump): new procedure
+
+2017-03-20  Mike Gran  <spk121@yahoo.com>
+
+	i18n: add tests for locale-digit-grouping
+	* test-suite/tests/i18n.test ("nl-langinfo et al."): new tests
+
+	i18n: add tests for locale AM/PM
+	* test-suite/tests/i18n.test ("nl-langinfo et al."): new tests
+
+	i18n: rename locale-monetary-digit-grouping to locale-monetary-grouping
+	* module/ice-9/i18n.scm (locale-monetary-digit-grouping): renamed to locale-monetary grouping
+	  (monetary-amount->locale-string): use renamed procedure
+	* test-suite/tests/i18n.test (%french-locale): add LC_MONETARY
+	  (%french-utf8-locale): add LC_MONETARY
+	  ("nl-langinfo et al."): tests for locale-monetary-grouping
+
+2017-03-17  Ludovic Courtès  <ludo@gnu.org>
+
+	web: Avoid deprecated '_IOFBF'.
+	* module/web/client.scm (open-socket-for-uri): Use 'block instead of
+	_IOFBF.
+
+	web: Remove export of nonexistent 'open-connection-for-uri'.
+	* module/web/client.scm: Don't export 'open-connection-for-uri', which
+	doesn't exist.
+
 2017-03-15  Andy Wingo  <wingo@pobox.com>
 
 	Add generic prebuilt links to dist.
