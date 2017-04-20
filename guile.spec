@@ -6,7 +6,7 @@
 #
 Name     : guile
 Version  : 2.2.1
-Release  : 19
+Release  : 20
 URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.2.1.tar.xz
 Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.2.1.tar.xz
 Source99 : ftp://ftp.gnu.org/gnu/guile/guile-2.2.1.tar.xz.sig
@@ -88,7 +88,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1492695576
+export SOURCE_DATE_EPOCH=1492696650
 %configure --disable-static
 make V=1  %{?_smp_mflags}
 
@@ -100,7 +100,7 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1492695576
+export SOURCE_DATE_EPOCH=1492696650
 rm -rf %{buildroot}
 %make_install
 
@@ -876,9 +876,9 @@ rm -rf %{buildroot}
 
 %files lib
 %defattr(-,root,root,-)
+%exclude /usr/lib64/libguile-2.2.so.1.1.0-gdb.scm
 /usr/lib64/guile/2.2/extensions/guile-readline.so
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
 /usr/lib64/libguile-2.2.so.1
 /usr/lib64/libguile-2.2.so.1.1.0
-/usr/lib64/libguile-2.2.so.1.1.0-gdb.scm
