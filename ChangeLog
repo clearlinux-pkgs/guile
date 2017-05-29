@@ -1,3 +1,32 @@
+2017-04-21  Andy Wingo  <wingo@pobox.com>
+
+	Bump version to 2.2.2.
+	* GUILE-VERSION: Bump to 2.2.2.
+
+	Update NEWS some more
+	* NEWS: More updates.
+
+	Update NEWS.
+	* NEWS: Update.
+
+	Syntax objects are comparable with equal?
+	* libguile/eq.c (scm_equal_p, scm_raw_ihash): Add cases for syntax
+	  objects, which should be comparable with equal?.
+	* test-suite/tests/syntax.test ("syntax objects"): Add tests.
+
+2017-04-20  Thomas Danckaert  <thomas.danckaert@gmail.com>
+
+	SRFI-37: Account for zero-length arguments.
+	* module/srfi/srfi-37.scm (args-fold): When checking if an argument is
+	an option (starts with #\-), first check if the length is non-zero.
+
+2017-04-20  Andy Wingo  <wingo@pobox.com>
+
+	Restore libgc 7.2 compatibility
+	* configure.ac: Check for GC_is_heap_ptr, added after libgc 7.2.
+	* libguile/pairs.h (GC_is_heap_ptr): Define a shim for GC_is_heap_ptr,
+	  inside BUILDING_LIBGUILE so as not to expose it to users.
+
 2017-04-19  Andy Wingo  <wingo@pobox.com>
 
 	GNU Guile 2.2.1.
