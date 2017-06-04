@@ -6,7 +6,7 @@
 #
 Name     : guile
 Version  : 2.2.2
-Release  : 23
+Release  : 24
 URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.2.2.tar.xz
 Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.2.2.tar.xz
 Source99 : ftp://ftp.gnu.org/gnu/guile/guile-2.2.2.tar.xz.sig
@@ -881,4 +881,4 @@ rm -rf %{buildroot}
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
 /usr/lib64/libguile-2.2.so.1
 /usr/lib64/libguile-2.2.so.1.2.0
-/usr/lib64/libguile-2.2.so.1.2.0-gdb.scm
+%exclude /usr/lib64/libguile-2.2.so.1.2.0-gdb.scm
