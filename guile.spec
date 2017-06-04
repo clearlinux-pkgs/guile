@@ -6,7 +6,7 @@
 #
 Name     : guile
 Version  : 2.2.2
-Release  : 24
+Release  : 25
 URL      : ftp://ftp.gnu.org/gnu/guile/guile-2.2.2.tar.xz
 Source0  : ftp://ftp.gnu.org/gnu/guile/guile-2.2.2.tar.xz
 Source99 : ftp://ftp.gnu.org/gnu/guile/guile-2.2.2.tar.xz.sig
