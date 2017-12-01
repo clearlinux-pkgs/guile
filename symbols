@@ -1037,6 +1037,7 @@ libguile-2.2.so.1:scm_make_stack
 libguile-2.2.so.1:scm_make_string
 libguile-2.2.so.1:scm_make_struct
 libguile-2.2.so.1:scm_make_struct_layout
+libguile-2.2.so.1:scm_make_struct_no_tail
 libguile-2.2.so.1:scm_make_symbol
 libguile-2.2.so.1:scm_make_syntax_transformer
 libguile-2.2.so.1:scm_make_thread_local_fluid
@@ -1557,7 +1558,9 @@ libguile-2.2.so.1:scm_strport_to_string
 libguile-2.2.so.1:scm_strptime
 libguile-2.2.so.1:scm_struct_p
 libguile-2.2.so.1:scm_struct_ref
+libguile-2.2.so.1:scm_struct_ref_unboxed
 libguile-2.2.so.1:scm_struct_set_x
+libguile-2.2.so.1:scm_struct_set_x_unboxed
 libguile-2.2.so.1:scm_struct_vtable
 libguile-2.2.so.1:scm_struct_vtable_name
 libguile-2.2.so.1:scm_struct_vtable_p

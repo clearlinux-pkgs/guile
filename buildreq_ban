@@ -1,2 +1,5 @@
 # This file contains build requirements that get picked up but are
 # undesirable. One entry per line, no whitespace.
+# NOTE: The upstream project distributes prebuilt .go files, but they are GUILE
+# Object files instead of Go source files, so we ban the go package here.
+go
