@@ -1,7 +1,4 @@
-Configure miss: xlocale.h
 Configure miss: whether pow can be used without linking with libm
-Configure miss: whether wint_t is too small
-Configure miss: whether stdint.h predates C++11
 Configure miss: whether gai_strerrorA is declared
 Configure miss: sys/sysmp.h
 Configure miss: sched_getaffinity_np
@@ -21,7 +18,6 @@ Configure miss: sys/stdtypes.h presence
 Configure miss: sys/stdtypes.h
 Configure miss: sys/utime.h usability
 Configure miss: sys/utime.h presence
-Configure miss: sys/utime.h
 Configure miss: direct.h usability
 Configure miss: direct.h presence
 Configure miss: machine/fpu.h usability
@@ -43,4 +39,3 @@ Configure miss: pthread_get_stackaddr_np
 Configure miss: pthread_attr_get_np
 Configure miss: whether PTHREAD_ONCE_INIT needs braces
 Configure miss: whether PTHREAD_MUTEX_INITIALIZER needs braces
-Configure miss: whether C compiler handles -Werror -Wunknown-warning-option
