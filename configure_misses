@@ -6,7 +6,7 @@ Configure miss: sysmp
 Configure miss: timezone_t
 Configure miss: gcc -std=gnu11 option to accept ISO C99
 Configure miss: if gcc -std=gnu11 supports -fno-rtti -fno-exceptions
-Configure miss: if gcc -std=gnu11 static flag -static works
+Configure miss: whether a statically linked program can dlopen itself
 Configure miss: __uc_get_ar_bsp in -luca
 Configure miss: libc.h usability
 Configure miss: libc.h presence
