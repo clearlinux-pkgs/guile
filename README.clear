@@ -1,0 +1,2 @@
+when updating this package, make sure to update the excludes file
+for the .scm file in /usr/lib64

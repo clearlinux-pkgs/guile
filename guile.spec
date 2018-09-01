@@ -6,7 +6,7 @@
 #
 Name     : guile
 Version  : 2.2.4
-Release  : 34
+Release  : 35
 URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz
 Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz
 Source99 : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz.sig
@@ -111,19 +111,12 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1535666432
+export SOURCE_DATE_EPOCH=1535778894
 %configure --disable-static
 make  %{?_smp_mflags}
 
-%check
-export LANG=C
-export http_proxy=http://127.0.0.1:9/
-export https_proxy=http://127.0.0.1:9/
-export no_proxy=localhost,127.0.0.1,0.0.0.0
-make VERBOSE=1 V=1 %{?_smp_mflags} check
-
 %install
-export SOURCE_DATE_EPOCH=1535666432
+export SOURCE_DATE_EPOCH=1535778894
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/doc/guile
 cp COPYING %{buildroot}/usr/share/doc/guile/COPYING
@@ -906,12 +899,12 @@ cp LICENSE %{buildroot}/usr/share/doc/guile/LICENSE
 
 %files lib
 %defattr(-,root,root,-)
+%exclude /usr/lib64/libguile-2.2.so.1.3.1-gdb.scm
 /usr/lib64/guile/2.2/extensions/guile-readline.so
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
 /usr/lib64/libguile-2.2.so.1
 /usr/lib64/libguile-2.2.so.1.3.1
-/usr/lib64/libguile-2.2.so.1.3.1-gdb.scm
 
 %files license
 %defattr(-,root,root,-)
