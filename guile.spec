@@ -6,7 +6,7 @@
 #
 Name     : guile
 Version  : 2.2.4
-Release  : 35
+Release  : 36
 URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz
 Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz
 Source99 : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz.sig
