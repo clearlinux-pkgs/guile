@@ -1,6 +1,8 @@
 # This file contains recursive sources that require this package
 autogen
 gcc
+gcc7
+gcc8
 libgfortran-avx
 libgfortran-compat-soname3
 libgfortran-compat-soname4

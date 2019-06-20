@@ -5,19 +5,19 @@
 # Source0 file verified with key 0x090B11993D9AEBB5 (ludo@gnu.org)
 #
 Name     : guile
-Version  : 2.2.4
-Release  : 37
-URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz
-Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz
-Source99 : https://mirrors.kernel.org/gnu/guile/guile-2.2.4.tar.xz.sig
+Version  : 2.2.5
+Release  : 38
+URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.5.tar.xz
+Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.5.tar.xz
+Source99 : https://mirrors.kernel.org/gnu/guile/guile-2.2.5.tar.xz.sig
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
 Group    : Development/Tools
 License  : GPL-3.0 LGPL-3.0
-Requires: guile-bin
-Requires: guile-lib
-Requires: guile-license
-Requires: guile-data
-Requires: guile-man
+Requires: guile-bin = %{version}-%{release}
+Requires: guile-data = %{version}-%{release}
+Requires: guile-lib = %{version}-%{release}
+Requires: guile-license = %{version}-%{release}
+Requires: guile-man = %{version}-%{release}
 BuildRequires : buildreq-golang
 BuildRequires : emacs
 BuildRequires : glibc-locale
@@ -40,9 +40,8 @@ users of Guile-based applications a choice of languages.
 %package bin
 Summary: bin components for the guile package.
 Group: Binaries
-Requires: guile-data
-Requires: guile-license
-Requires: guile-man
+Requires: guile-data = %{version}-%{release}
+Requires: guile-license = %{version}-%{release}
 
 %description bin
 bin components for the guile package.
@@ -59,10 +58,11 @@ data components for the guile package.
 %package dev
 Summary: dev components for the guile package.
 Group: Development
-Requires: guile-lib
-Requires: guile-bin
-Requires: guile-data
-Provides: guile-devel
+Requires: guile-lib = %{version}-%{release}
+Requires: guile-bin = %{version}-%{release}
+Requires: guile-data = %{version}-%{release}
+Provides: guile-devel = %{version}-%{release}
+Requires: guile = %{version}-%{release}
 
 %description dev
 dev components for the guile package.
@@ -71,7 +71,7 @@ dev components for the guile package.
 %package doc
 Summary: doc components for the guile package.
 Group: Documentation
-Requires: guile-man
+Requires: guile-man = %{version}-%{release}
 
 %description doc
 doc components for the guile package.
@@ -80,8 +80,8 @@ doc components for the guile package.
 %package lib
 Summary: lib components for the guile package.
 Group: Libraries
-Requires: guile-data
-Requires: guile-license
+Requires: guile-data = %{version}-%{release}
+Requires: guile-license = %{version}-%{release}
 
 %description lib
 lib components for the guile package.
@@ -104,24 +104,29 @@ man components for the guile package.
 
 
 %prep
-%setup -q -n guile-2.2.4
+%setup -q -n guile-2.2.5
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1535778894
+export SOURCE_DATE_EPOCH=1561067387
+export GCC_IGNORE_WERROR=1
+export CFLAGS="$CFLAGS -fno-lto "
+export FCFLAGS="$CFLAGS -fno-lto "
+export FFLAGS="$CFLAGS -fno-lto "
+export CXXFLAGS="$CXXFLAGS -fno-lto "
 %configure --disable-static
 make  %{?_smp_mflags}
 
 %install
-export SOURCE_DATE_EPOCH=1535778894
+export SOURCE_DATE_EPOCH=1561067387
 rm -rf %{buildroot}
-mkdir -p %{buildroot}/usr/share/doc/guile
-cp COPYING %{buildroot}/usr/share/doc/guile/COPYING
-cp COPYING.LESSER %{buildroot}/usr/share/doc/guile/COPYING.LESSER
-cp LICENSE %{buildroot}/usr/share/doc/guile/LICENSE
+mkdir -p %{buildroot}/usr/share/package-licenses/guile
+cp COPYING %{buildroot}/usr/share/package-licenses/guile/COPYING
+cp COPYING.LESSER %{buildroot}/usr/share/package-licenses/guile/COPYING.LESSER
+cp LICENSE %{buildroot}/usr/share/package-licenses/guile/LICENSE
 %make_install
 
 %files
@@ -899,19 +904,19 @@ cp LICENSE %{buildroot}/usr/share/doc/guile/LICENSE
 
 %files lib
 %defattr(-,root,root,-)
-%exclude /usr/lib64/libguile-2.2.so.1.3.1-gdb.scm
 /usr/lib64/guile/2.2/extensions/guile-readline.so
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
 /usr/lib64/libguile-2.2.so.1
-/usr/lib64/libguile-2.2.so.1.3.1
+/usr/lib64/libguile-2.2.so.1.4.0
+/usr/lib64/libguile-2.2.so.1.4.0-gdb.scm
 
 %files license
-%defattr(-,root,root,-)
-/usr/share/doc/guile/COPYING
-/usr/share/doc/guile/COPYING.LESSER
-/usr/share/doc/guile/LICENSE
+%defattr(0644,root,root,0755)
+/usr/share/package-licenses/guile/COPYING
+/usr/share/package-licenses/guile/COPYING.LESSER
+/usr/share/package-licenses/guile/LICENSE
 
 %files man
-%defattr(-,root,root,-)
+%defattr(0644,root,root,0755)
 /usr/share/man/man1/guile.1

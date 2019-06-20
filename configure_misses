@@ -27,6 +27,7 @@ Configure miss: whether libc.h and unistd.h can be included together
 Configure miss: DINFINITY
 Configure miss: DQNAN
 Configure miss: chsize
+Configure miss: whether _NL_NUMERIC_GROUPING is declared
 Configure miss: pthread_np.h usability
 Configure miss: pthread_np.h presence
 Configure miss: pthread_np.h

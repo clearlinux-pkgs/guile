@@ -743,6 +743,7 @@ libguile-2.2.so.1:scm_get_bytevector_all
 libguile-2.2.so.1:scm_get_bytevector_n
 libguile-2.2.so.1:scm_get_bytevector_n_x
 libguile-2.2.so.1:scm_get_bytevector_some
+libguile-2.2.so.1:scm_get_bytevector_some_x
 libguile-2.2.so.1:scm_get_internal_real_time
 libguile-2.2.so.1:scm_get_internal_run_time
 libguile-2.2.so.1:scm_get_keyword
@@ -831,6 +832,7 @@ libguile-2.2.so.1:scm_hook_to_list
 libguile-2.2.so.1:scm_i_big2dbl
 libguile-2.2.so.1:scm_i_clonebig
 libguile-2.2.so.1:scm_i_long2big
+libguile-2.2.so.1:scm_i_make_char
 libguile-2.2.so.1:scm_i_new_double_smob
 libguile-2.2.so.1:scm_i_new_smob
 libguile-2.2.so.1:scm_i_normbig
