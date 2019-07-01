@@ -5,11 +5,11 @@
 # Source0 file verified with key 0x090B11993D9AEBB5 (ludo@gnu.org)
 #
 Name     : guile
-Version  : 2.2.5
-Release  : 39
-URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.5.tar.xz
-Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.5.tar.xz
-Source99 : https://mirrors.kernel.org/gnu/guile/guile-2.2.5.tar.xz.sig
+Version  : 2.2.6
+Release  : 40
+URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
+Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
+Source99 : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz.sig
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
 Group    : Development/Tools
 License  : GPL-3.0 LGPL-3.0
@@ -104,14 +104,14 @@ man components for the guile package.
 
 
 %prep
-%setup -q -n guile-2.2.5
+%setup -q -n guile-2.2.6
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1561068439
+export SOURCE_DATE_EPOCH=1562011187
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$CFLAGS -fno-lto "
@@ -121,7 +121,7 @@ export CXXFLAGS="$CXXFLAGS -fno-lto "
 make  %{?_smp_mflags}
 
 %install
-export SOURCE_DATE_EPOCH=1561068439
+export SOURCE_DATE_EPOCH=1562011187
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/guile
 cp COPYING %{buildroot}/usr/share/package-licenses/guile/COPYING
@@ -904,12 +904,12 @@ cp LICENSE %{buildroot}/usr/share/package-licenses/guile/LICENSE
 
 %files lib
 %defattr(-,root,root,-)
-%exclude /usr/lib64/libguile-2.2.so.1.4.0-gdb.scm
 /usr/lib64/guile/2.2/extensions/guile-readline.so
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
 /usr/lib64/libguile-2.2.so.1
-/usr/lib64/libguile-2.2.so.1.4.0
+/usr/lib64/libguile-2.2.so.1.4.1
+/usr/lib64/libguile-2.2.so.1.4.1-gdb.scm
 
 %files license
 %defattr(0644,root,root,0755)
