@@ -7,4 +7,5 @@ libgfortran-avx
 libgfortran-compat-soname3
 libgfortran-compat-soname4
 make
+mingw-gcc
 swig

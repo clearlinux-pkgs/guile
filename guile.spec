@@ -6,15 +6,16 @@
 #
 Name     : guile
 Version  : 2.2.6
-Release  : 42
+Release  : 43
 URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
 Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
-Source99 : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz.sig
+Source1 : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz.sig
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
 Group    : Development/Tools
 License  : GPL-3.0 LGPL-3.0
 Requires: guile-bin = %{version}-%{release}
 Requires: guile-data = %{version}-%{release}
+Requires: guile-info = %{version}-%{release}
 Requires: guile-lib = %{version}-%{release}
 Requires: guile-license = %{version}-%{release}
 Requires: guile-man = %{version}-%{release}
@@ -68,13 +69,12 @@ Requires: guile = %{version}-%{release}
 dev components for the guile package.
 
 
-%package doc
-Summary: doc components for the guile package.
-Group: Documentation
-Requires: guile-man = %{version}-%{release}
+%package info
+Summary: info components for the guile package.
+Group: Default
 
-%description doc
-doc components for the guile package.
+%description info
+info components for the guile package.
 
 
 %package lib
@@ -105,13 +105,14 @@ man components for the guile package.
 
 %prep
 %setup -q -n guile-2.2.6
+cd %{_builddir}/guile-2.2.6
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
-export LANG=C
-export SOURCE_DATE_EPOCH=1562012390
+export LANG=C.UTF-8
+export SOURCE_DATE_EPOCH=1573792248
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$CFLAGS -fno-lto "
@@ -121,13 +122,23 @@ export CXXFLAGS="$CXXFLAGS -fno-lto "
 make  %{?_smp_mflags}
 
 %install
-export SOURCE_DATE_EPOCH=1562012390
+export SOURCE_DATE_EPOCH=1573792248
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/guile
-cp COPYING %{buildroot}/usr/share/package-licenses/guile/COPYING
-cp COPYING.LESSER %{buildroot}/usr/share/package-licenses/guile/COPYING.LESSER
-cp LICENSE %{buildroot}/usr/share/package-licenses/guile/LICENSE
+cp %{_builddir}/guile-2.2.6/COPYING %{buildroot}/usr/share/package-licenses/guile/8624bcdae55baeef00cd11d5dfcfa60f68710a02
+cp %{_builddir}/guile-2.2.6/COPYING.LESSER %{buildroot}/usr/share/package-licenses/guile/e203d4ef09d404fa5c03cf6590e44231665be689
+cp %{_builddir}/guile-2.2.6/LICENSE %{buildroot}/usr/share/package-licenses/guile/1b32791cb14bd393369489b8dac99b741d884ba0
 %make_install
+## Remove excluded files
+rm -f %{buildroot}/usr/lib64/libguile-2.0.so.22.8.0-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.0.so.22.8.1-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.0.0-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.1.0-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.2.0-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.3.0-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.3.1-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.4.0-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.4.1-gdb.scm
 
 %files
 %defattr(-,root,root,-)
@@ -898,13 +909,23 @@ cp LICENSE %{buildroot}/usr/share/package-licenses/guile/LICENSE
 /usr/lib64/pkgconfig/guile-2.2.pc
 /usr/share/aclocal/*.m4
 
-%files doc
+%files info
 %defattr(0644,root,root,0755)
-%doc /usr/share/info/*
+/usr/share/info/guile.info
+/usr/share/info/guile.info-1
+/usr/share/info/guile.info-10
+/usr/share/info/guile.info-2
+/usr/share/info/guile.info-3
+/usr/share/info/guile.info-4
+/usr/share/info/guile.info-5
+/usr/share/info/guile.info-6
+/usr/share/info/guile.info-7
+/usr/share/info/guile.info-8
+/usr/share/info/guile.info-9
+/usr/share/info/r5rs.info
 
 %files lib
 %defattr(-,root,root,-)
-%exclude /usr/lib64/libguile-2.2.so.1.4.1-gdb.scm
 /usr/lib64/guile/2.2/extensions/guile-readline.so
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
@@ -913,9 +934,9 @@ cp LICENSE %{buildroot}/usr/share/package-licenses/guile/LICENSE
 
 %files license
 %defattr(0644,root,root,0755)
-/usr/share/package-licenses/guile/COPYING
-/usr/share/package-licenses/guile/COPYING.LESSER
-/usr/share/package-licenses/guile/LICENSE
+/usr/share/package-licenses/guile/1b32791cb14bd393369489b8dac99b741d884ba0
+/usr/share/package-licenses/guile/8624bcdae55baeef00cd11d5dfcfa60f68710a02
+/usr/share/package-licenses/guile/e203d4ef09d404fa5c03cf6590e44231665be689
 
 %files man
 %defattr(0644,root,root,0755)
