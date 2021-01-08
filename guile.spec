@@ -6,10 +6,10 @@
 #
 Name     : guile
 Version  : 2.2.6
-Release  : 43
+Release  : 44
 URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
 Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
-Source1 : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz.sig
+Source1  : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz.sig
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
 Group    : Development/Tools
 License  : GPL-3.0 LGPL-3.0
@@ -30,6 +30,7 @@ BuildRequires : pkgconfig(libffi)
 BuildRequires : readline-dev
 BuildRequires : sed
 BuildRequires : texinfo
+Patch1: 0001-Add-Require-for-guile-on-bdw-gc.patch
 
 %description
 This is version 2.2 of Guile, Project GNU's extension language library.
@@ -106,23 +107,24 @@ man components for the guile package.
 %prep
 %setup -q -n guile-2.2.6
 cd %{_builddir}/guile-2.2.6
+%patch1 -p1
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1573792248
+export SOURCE_DATE_EPOCH=1610142854
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
-export FCFLAGS="$CFLAGS -fno-lto "
-export FFLAGS="$CFLAGS -fno-lto "
+export FCFLAGS="$FFLAGS -fno-lto "
+export FFLAGS="$FFLAGS -fno-lto "
 export CXXFLAGS="$CXXFLAGS -fno-lto "
 %configure --disable-static
 make  %{?_smp_mflags}
 
 %install
-export SOURCE_DATE_EPOCH=1573792248
+export SOURCE_DATE_EPOCH=1610142854
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/guile
 cp %{_builddir}/guile-2.2.6/COPYING %{buildroot}/usr/share/package-licenses/guile/8624bcdae55baeef00cd11d5dfcfa60f68710a02
