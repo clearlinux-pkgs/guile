@@ -1,4 +1,4 @@
-From 4c5ab62ab2ea423375144bbf476646e493625093 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Karthik Prabhu Vinod <karthik.prabhu.vinod@intel.com>
 Date: Fri, 8 Jan 2021 13:43:54 -0800
 Subject: [PATCH] Add Require for guile on bdw-gc
@@ -20,6 +20,3 @@ index c6d12b5..2e6e800 100644
  Libs: -L${libdir} -lguile-@GUILE_EFFECTIVE_VERSION@ @BDW_GC_LIBS@
  Libs.private: @LIB_CLOCK_GETTIME@ @LIBGMP@ @LIBLTDL@ @LIBFFI_LIBS@	\
    @LIBUNISTRING@ @GUILE_LIBS@ @LIBICONV@ @LIBINTL@ @LIBSOCKET@		\
--- 
-2.30.0
-

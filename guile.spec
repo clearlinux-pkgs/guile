@@ -5,11 +5,11 @@
 # Source0 file verified with key 0x090B11993D9AEBB5 (ludo@gnu.org)
 #
 Name     : guile
-Version  : 2.2.6
-Release  : 44
-URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
-Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz
-Source1  : https://mirrors.kernel.org/gnu/guile/guile-2.2.6.tar.xz.sig
+Version  : 2.2.7
+Release  : 45
+URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.7.tar.xz
+Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.7.tar.xz
+Source1  : https://mirrors.kernel.org/gnu/guile/guile-2.2.7.tar.xz.sig
 Summary  : GNU's Ubiquitous Intelligent Language for Extension (uninstalled)
 Group    : Development/Tools
 License  : GPL-3.0 LGPL-3.0
@@ -19,7 +19,6 @@ Requires: guile-info = %{version}-%{release}
 Requires: guile-lib = %{version}-%{release}
 Requires: guile-license = %{version}-%{release}
 Requires: guile-man = %{version}-%{release}
-BuildRequires : buildreq-golang
 BuildRequires : emacs
 BuildRequires : glibc-locale
 BuildRequires : gmp-dev
@@ -31,6 +30,8 @@ BuildRequires : readline-dev
 BuildRequires : sed
 BuildRequires : texinfo
 Patch1: 0001-Add-Require-for-guile-on-bdw-gc.patch
+Patch2: 0002-Revert-Fix-build-on-platforms-where-the-stack-grows-.patch
+Patch3: 0003-Fix-fixpoint-computation-in-compute-significant-bits.patch
 
 %description
 This is version 2.2 of Guile, Project GNU's extension language library.
@@ -105,16 +106,18 @@ man components for the guile package.
 
 
 %prep
-%setup -q -n guile-2.2.6
-cd %{_builddir}/guile-2.2.6
+%setup -q -n guile-2.2.7
+cd %{_builddir}/guile-2.2.7
 %patch1 -p1
+%patch2 -p1
+%patch3 -p1
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1610142854
+export SOURCE_DATE_EPOCH=1611798729
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$FFLAGS -fno-lto "
@@ -124,23 +127,15 @@ export CXXFLAGS="$CXXFLAGS -fno-lto "
 make  %{?_smp_mflags}
 
 %install
-export SOURCE_DATE_EPOCH=1610142854
+export SOURCE_DATE_EPOCH=1611798729
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/guile
-cp %{_builddir}/guile-2.2.6/COPYING %{buildroot}/usr/share/package-licenses/guile/8624bcdae55baeef00cd11d5dfcfa60f68710a02
-cp %{_builddir}/guile-2.2.6/COPYING.LESSER %{buildroot}/usr/share/package-licenses/guile/e203d4ef09d404fa5c03cf6590e44231665be689
-cp %{_builddir}/guile-2.2.6/LICENSE %{buildroot}/usr/share/package-licenses/guile/1b32791cb14bd393369489b8dac99b741d884ba0
+cp %{_builddir}/guile-2.2.7/COPYING %{buildroot}/usr/share/package-licenses/guile/8624bcdae55baeef00cd11d5dfcfa60f68710a02
+cp %{_builddir}/guile-2.2.7/COPYING.LESSER %{buildroot}/usr/share/package-licenses/guile/e203d4ef09d404fa5c03cf6590e44231665be689
+cp %{_builddir}/guile-2.2.7/LICENSE %{buildroot}/usr/share/package-licenses/guile/1b32791cb14bd393369489b8dac99b741d884ba0
 %make_install
 ## Remove excluded files
-rm -f %{buildroot}/usr/lib64/libguile-2.0.so.22.8.0-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.0.so.22.8.1-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.0.0-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.1.0-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.2.0-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.3.0-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.3.1-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.4.0-gdb.scm
-rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.4.1-gdb.scm
+rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.4.2-gdb.scm
 
 %files
 %defattr(-,root,root,-)
@@ -932,7 +927,7 @@ rm -f %{buildroot}/usr/lib64/libguile-2.2.so.1.4.1-gdb.scm
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0
 /usr/lib64/guile/2.2/extensions/guile-readline.so.0.0.0
 /usr/lib64/libguile-2.2.so.1
-/usr/lib64/libguile-2.2.so.1.4.1
+/usr/lib64/libguile-2.2.so.1.4.2
 
 %files license
 %defattr(0644,root,root,0755)

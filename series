@@ -1,1 +1,3 @@
 0001-Add-Require-for-guile-on-bdw-gc.patch
+0002-Revert-Fix-build-on-platforms-where-the-stack-grows-.patch
+0003-Fix-fixpoint-computation-in-compute-significant-bits.patch
