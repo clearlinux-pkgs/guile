@@ -1,9 +1,9 @@
 # This file contains recursive sources that require this package
 autogen
+compat-gcc-10
 gcc
 gcc7
 gcc8
 gcc9
 make
 mingw-gcc
-swig

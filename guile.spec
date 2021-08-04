@@ -6,7 +6,7 @@
 #
 Name     : guile
 Version  : 2.2.7
-Release  : 45
+Release  : 46
 URL      : https://mirrors.kernel.org/gnu/guile/guile-2.2.7.tar.xz
 Source0  : https://mirrors.kernel.org/gnu/guile/guile-2.2.7.tar.xz
 Source1  : https://mirrors.kernel.org/gnu/guile/guile-2.2.7.tar.xz.sig
@@ -117,7 +117,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1611798729
+export SOURCE_DATE_EPOCH=1628095116
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$FFLAGS -fno-lto "
@@ -127,7 +127,7 @@ export CXXFLAGS="$CXXFLAGS -fno-lto "
 make  %{?_smp_mflags}
 
 %install
-export SOURCE_DATE_EPOCH=1611798729
+export SOURCE_DATE_EPOCH=1628095116
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/guile
 cp %{_builddir}/guile-2.2.7/COPYING %{buildroot}/usr/share/package-licenses/guile/8624bcdae55baeef00cd11d5dfcfa60f68710a02
