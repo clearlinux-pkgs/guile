@@ -1,3 +1,3 @@
-0001-Add-Require-for-guile-on-bdw-gc.patch
-0002-Revert-Fix-build-on-platforms-where-the-stack-grows-.patch
-0003-Fix-fixpoint-computation-in-compute-significant-bits.patch
+0001-Add-missing-requirements-to-pc-file.patch
+# not running test suite at the moment...
+#0002-Mark-test-out-of-memory-as-an-expected-failure-for-n.patch

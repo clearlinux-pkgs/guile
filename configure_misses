@@ -1,36 +1,27 @@
-Configure miss: CFLocaleCopyPreferredLanguages
+Configure miss: 32-bit host C ABI
 Configure miss: DINFINITY
 Configure miss: DQNAN
 Configure miss: __sincos
 Configure miss: __uc_get_ar_bsp in -luca
 Configure miss: chsize
-Configure miss: direct.h presence
-Configure miss: direct.h usability
-Configure miss: gcc -std=gnu11 option to accept ISO C99
+Configure miss: compiler option needed when checking for declarations
+Configure miss: crtdefs.h
+Configure miss: gcc -std=gnu11 options needed to detect all undeclared functions
+Configure miss: gcc-objcopy
 Configure miss: if gcc -std=gnu11 static flag -static works
 Configure miss: if gcc -std=gnu11 supports -fno-rtti -fno-exceptions
 Configure miss: libc.h
-Configure miss: libc.h presence
-Configure miss: libc.h usability
 Configure miss: machine/fpu.h
-Configure miss: machine/fpu.h presence
-Configure miss: machine/fpu.h usability
-Configure miss: process.h presence
-Configure miss: process.h usability
 Configure miss: pthread_attr_get_np
 Configure miss: pthread_get_stackaddr_np
 Configure miss: pthread_np.h
-Configure miss: pthread_np.h presence
-Configure miss: pthread_np.h usability
 Configure miss: sched_getaffinity_np
+Configure miss: snprintf_l
+Configure miss: struct GC_stack_base.reg_base
 Configure miss: struct sockaddr_in6.sin6_len
 Configure miss: sys/stdtypes.h
-Configure miss: sys/stdtypes.h presence
-Configure miss: sys/stdtypes.h usability
 Configure miss: sys/sysctl.h
 Configure miss: sys/sysmp.h
-Configure miss: sys/utime.h presence
-Configure miss: sys/utime.h usability
 Configure miss: sysctl
 Configure miss: sysmp
 Configure miss: timezone_t
@@ -42,4 +33,8 @@ Configure miss: whether hstrerror is declared
 Configure miss: whether libc.h and unistd.h can be included together
 Configure miss: whether localtime caches TZ
 Configure miss: whether pow can be used without linking with libm
+Configure miss: whether the compiler is clang
+Configure miss: whether the compiler produces multi-arch binaries
 Configure miss: whether we need POSIX to get struct utimbuf
+Configure miss: x86_64-generic-linux-gnu-gcc-objcopy
+Configure miss: x86_64-generic-linux-gnu-objcopy

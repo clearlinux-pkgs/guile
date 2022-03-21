@@ -1,14 +1,774 @@
 Guile NEWS --- history of user-visible changes.
-Copyright (C) 1996-2020 Free Software Foundation, Inc.
+Copyright (C) 1996-2022 Free Software Foundation, Inc.
 See the end for copying conditions.
 
 Please send Guile bug reports to bug-guile@gnu.org.
 
-
 
-Changes in 2.2.7 (since 2.2.6)
+Changes in 3.0.8 (since 3.0.7)
+
+* Notable changes
+
+** Cross-module inlining
+
+Although historically Guile has treated modules as glorified hash
+tables, most modules are actually _declarative_ -- they just define
+functions and variables and provide them for other modules to use, and
+don't manipulate modules as first-class objects.  See "Declarative
+Modules" in the manual, for more discussion.
+
+Since version 3.0.0, Guile has taken advantage of declarative semantics
+to allow a top-level definition to be inlined within its uses in the
+same compilation unit, provided the binding is never assigned and
+defined exactly once.  Guile 3.0.8 extends this to allow some
+exported declarative definitions to be inlined into other modules.
+
+This facility is mostly transparent to the user and is enabled at the
+default -O2 optimization level.  "Small" definitions are available for
+cross-module inlining (-Oinlinable-exports, included at -O2).  The
+actual inlining decision is performed by Guile's partial evaluation pass
+(the -Ocross-module-inlining modifier to -Opeval, included at -O2 also),
+subject to effort and size growth counters.
+
+Note however that as with macros, when a definition changes in module A,
+a separately compiled module B that uses that definition doesn't
+automatically get recompiled.  This is a limitation in Guile that we
+would like to fix.
+
+As another limitation, cross-module inlining is only available for
+imports from modules which have already been compiled at -O2 (or
+otherwise with -Oinlinable-exports).
+
+When determining whether to enable this facility by default, we weighed
+the usability problems of stale inlined bindings against the benefit of
+allowing module boundaries to no longer be optimization boundaries, we
+ended up on the "let's do it!" side of the equation.  However we welcome
+feedback from users as to what should be the default behavior, until
+such a time as we have a proper notion of when a compiled file is stale
+or not.
+
+** Avoid the need for a custom GMP allocator
+
+In Guile 3.0.6, we fixed a longstanding bug in Guile's use of the
+library that Guile uses to implement bignums (large integers), GMP
+(https://gmplib.org).  See the Guile 3.0.6 release notes.  However this
+left us with a suboptimal Guile, in which each large integer had to have
+a finalizer to free the memory allocated by GMP.  Finalizers take time
+and space, and so they limit allocation rate, causing bignum performance
+to drop.  Though you could set an environment variable to go back to the
+older, faster behavior, it wasn't the default.
+
+In Guile 3.0.8 we fix this problem comprehensively by avoiding embedding
+GMP's mpz_t values in Guile bignums.  Instead we embed the bignum digits
+directly, avoiding the need for finalizers or custom allocators.  This
+removes the need for the GUILE_INSTALL_GMP_MEMORY_FUNCTIONS environment
+variable mentioned in the Guile 3.0.6 release notes.  We also deprecate
+the scm_install_gmp_memory_functions variable.
 
 * New interfaces and functionality
+
+** Typed vector copy functions in (srfi srfi-4 gnu)
+
+The functions `u8vector-copy' `s8vector-copy' `u16vector-copy'
+`s16vector-copy' `u32vector-copy' `s32vector-copy' `u64vector-copy'
+`s64vector-copy' `f32vector-copy' `f64vector-copy' `c32vector-copy'
+`c64vector-copy' `u8vector-copy!'  `s8vector-copy!'  `u16vector-copy!'
+`s16vector-copy!'  `u32vector-copy!'  `s32vector-copy!'
+`u64vector-copy!'  `s64vector-copy!'  `f32vector-copy!'
+`f64vector-copy!'  `c32vector-copy!'  `c64vector-copy!' have been
+added. See SRFI-4 - Guile extensions" in the manual.
+
+** New function srfi-4-vector-type-size in (srfi srfi-4 gnu)
+
+See SRFI-4 - Guile extensions" in the manual.
+
+** `bytevector-fill!' supports partial fill through optional arguments
+
+This is an extension to the r6rs procedure. See "Manipulating
+Bytevectors" in the manual.
+
+** `vector-copy!' and `vector-copy' from (rnrs base) included in core
+
+Compared to the previous versions, these accept range arguments. See
+"Accessing and Modifying Vector Contents" in the manual.
+
+** New function bitvector-copy
+
+See "Bit vectors" in the manual.
+
+** (system foreign) supports C99 complex types
+
+The types `complex-float' and `complex-double' stand for C99 `float
+_Complex' and `double _Complex` respectively.
+
+* Other new optimizations
+
+** Better optimization of "let" in right-hand-side of "letrec"
+
+** Allow constant-folding for calls to "expt"
+
+Thanks to Maxime Devos.
+
+** Add ,optimize-cps REPL meta-command
+    
+This meta-command is like ,optimize, but at a lower level.
+
+** Improve alias analysis in common subexpression elimination
+
+** Avoid argument-count checks for well-typed calls to known procedures
+
+This speeds up calls to lexically bound procedures.
+
+** Avoid return-value-count checks for calls to known-return-arity procedures
+
+This new optimization, enabled at -O2, speeds up returns from calls to
+lexically bound procedures.
+
+* Build system changes
+
+** Update Gnulib (bugs.gnu.org/49930)
+
+Update gnulib to 8f4538a53d64054ae2fc8b86c0f87c418c6176e6.
+    
+** Compile libguile with -flto if available
+
+By default, if the compiler supports link-time optimization via the
+-flto flag, Guile will add it to CFLAGS.  This results in a libguile
+that is approximately 15% smaller.  Pass --disable-lto to configure to
+inhibit this behavior.
+
+** Trim set of prebuilt .go files shipped in the tarball
+
+Guile includes built Scheme files in its tarball to speed up the build,
+for casual builders that are less concerned with reproducibility.
+However they took a lot of space and we have now trimmed these down to a
+more minimal set.  As always, you can remove them and build entirely
+from source via a `make -C prebuilt clean`.
+
+* New deprecations
+
+** Vector functions require vector arguments
+
+Passing arrays that are not vectors (arrays for which `(vector? array)'
+returns false) to functions `vector-move-left!', `vector-move-right!',
+`vector->list', and `vector-copy' is deprecated. Use `array-copy!',
+`array-copy', and `array->list' for such arguments.
+
+** `scm_from_contiguous_typed_array' is deprecated
+
+This function was added during the Guile 2.x series and was not
+documented and is no longer used in Guile itself.
+
+** Deprecate the "simple vector" concept, `scm_is_simple_vector'
+
+This concept meant to indicate "vectors which aren't array slices".  Use
+scm_is_vector.
+
+** Deprecate internal contiguous array flag
+
+We still reserve space for the flag to preserve ABI but it has no
+effect.  As such we also remove the internal SCM_I_ARRAY_CONTIGUOUS,
+SCM_SET_ARRAY_CONTIGUOUS_FLAG, SCM_CLR_ARRAY_CONTIGUOUS_FLAG,
+SCM_I_ARRAY_CONTP preprocessor interfaces, as they were internal and
+there is no longer a sensible way of using them.
+
+** Deprecate symbol properties
+
+Symbols used to have a "function slot" and a "property slot", inherited
+from Emacs Lisp and early Lisps, which one would access with
+'symbol-pref', 'symbol-fref', 'symbol-pset!', and 'symbol-fset!'.  These
+procedures have been discouraged in favor of object properties; they are
+now deprecated.  This saves a few words of memory per symbol.
+
+* Bug fixes
+
+** Fix compilation of (ash x N), where N is a literal, at -O1 and below
+** Texinfo and XML parsers are now thread-safe (bugs.gnu.org/51264)
+** Fix `filename-completion-function' in (ice-9 readline)
+** Fix trace-calls-to-procedure (bugs.gnu.org/43102, bugs.gnu.org/48412)
+** Fix bug in nftw function (bugs.gnu.org/44182)
+** Fix optimization bug in CSE in eq-constant? if both branches same
+** Fix readline initialization with invalid keymaps
+** Fix crash when reading #nil (bugs.gnu.org/49305)
+** Fix read error when reading #{}}#.
+** Fix Darwin host detection in foreign-library facility.
+** Fix unification of (x ...) patterns in `match'
+** Fix scaling floats with leading zeroes in `format'
+** Improve support for r7rs-style `(srfi N)' and r6rs-style `(srfi :N)
+   module names (bugs.gnu.org/39601, bugs.gnu.org/40371)
+** Add support for the ARC architecture (bugs.gnu.org/48816)
+** Build fix for const strerror result (bugs.gnu.org/43987)
+** Fix typos in SRFI documentation (bugs.gnu.org/50127)
+** Fix bounds check in `recvfrom!' (bugs.gnu.org/45595)
+** Add support for riscv32
+** Limit `ash' to left-shift by 2^32 bits (bugs.gnu.org/48150)
+** Fix type confusion in heap-numbers-equal? calls from VM
+    
+Hearty thanks to Jakub Wojciech, Robin Green, Daniel Llorens, Matija
+Obid, RhodiumToad, Rob Browning, Maxime Devos, Aleix Conchillo Flaqué,
+Timothy Sample, d4ryus, Fabrice Fontaine, Taylan Kammer, Vineet Gupta,
+Philipp Klaus Krause, Arun Isaac, and Alex Shinn.
+
+
+
+Changes in 3.0.7 (since 3.0.6)
+
+* New interfaces and functionality
+
+** More O_* POSIX constants are now defined in Scheme
+
+Guile now defines constants such as `O_NOFOLLOW', `O_CLOEXEC',
+`O_TMPFILE', and more on platforms that support them.  These may be
+passed as arguments to procedures such as `open' and `open-fdes'.
+
+* Bug fixes
+
+** Fix bugs introduced in 3.0.6 with Scheme `read` re-write
+** Fix deadlock after `primitive-fork' (#41948)
+** Fix duplicates handlers for interfaces that use interfaces (#43025)
+** Fix compile-psyntax.scm for (language tree-il canonicalize) removal
+** Fix prompt compilation bug (#48098)
+** Fix R7RS include-library-declarations, cond-expand (#40252)
+** Fix --enable-mini-gmp on FreeBSD and other targets
+** Fix excessive compile times for vectors >16k elements long
+** Fix use of literal tree-il as source language (#45131)
+** Fix SRFI-64 test-end to not remove globally-installed test runner
+
+
+Changes in 3.0.6 (since 3.0.5)
+
+* Notable changes
+
+** Reimplement dynamic library loading ("dlopening") without libltdl
+
+Guile used to load dynamic libraries with libltdl, a library provided by
+the Libtool project.
+
+Libltdl provided some compatibility benefits when loading shared
+libraries made with older toolchains on older operating systems.
+However, no system from the last 10 years or so appears to need such a
+thick compatibility layer.
+
+Besides being an unmaintained dependency of limited utility, libltdl
+also has the negative aspect that in its search for libraries to load,
+it could swallow useful errors for libraries that are found but not
+loadable, instead showing just errors for search path candidates that
+are not found.
+
+Guile now implements dynamic library loading directly in terms of the
+standard "dlopen" interface, providing a limited shim for platforms with
+similar functionality exposed under different names (MinGW).
+
+This change has a few practical impacts to Guile users.  There is a new
+library search path variable, `GUILE_EXTENSIONS_PATH'.  Also, errors when
+loading a library fails now have better errors.  And Guile no longer has
+a libltdl dependency.
+
+Although Guile no longer uses libltdl, for backwards compatibility Guile
+still adds `LTDL_LIBRARY_PATH' to the loadable library search path, and
+includes ad-hoc logic to support uninstalled dynamically loadable
+libraries via also adding the ".libs" subdirectories of
+`LTDL_LIBRARY_PATH' elements.  See "Foreign Libraries" in the
+documentation for a full discussion.
+
+** Fix important incompatibility with GnuTLS
+
+Guile uses the GNU multi-precision (GMP) library to implement
+arbitrary-precision integers (bignums) and fractions.  Usually Guile is
+built to dynamically link to libgmp.  In this configuration, any other
+user of GMP in the process uses the same libgmp instance, with the same
+shared state.
+
+An important piece of shared state is the GMP allocator, responsible for
+allocating storage for the digits of large integers.  For Guile it's
+most efficient to install libgc as the GMP allocator.  That way Guile
+doesn't need to install finalizers, which have significant overhead, to
+free GMP values when Guile bignums are collected.  Using libgc to
+allocate digits also allows Guile's GC to adequately measure the memory
+cost of these values.
+
+However, if the Guile process is linked to some other user of GMP, then
+probably the references from the other library to GMP values aren't
+visible to the garbage collector.  In this case libgc could prematurely
+collect values from that other GMP user.
+
+This isn't theoretical, sadly: it happens for Guile-GnuTLS.  GnuTLS uses
+GMP, and so does Guile.  Since Guile 2.0.4, Guile has installed libgc as
+the GMP allocator, so since then, Guile-GnuTLS has been buggy.
+
+Therefore, the default is now to not install libgc as the GMP allocator.
+This may slow down some uses of bignums.  If you know that your Guile
+program will never use a library that uses GMP, you can set the
+GUILE_INSTALL_GMP_MEMORY_FUNCTIONS=1 in your environment.  Guile sets
+this environment variable when building Guile, for example.  See
+"Environment Variables" in the manual, for more.
+
+In some future, Guile may switch to GMP's more low-level "MPN" API for
+working with bignums, which would allow us to regain the ability to use
+GC-managed digit storage in all configurations.
+
+** New build option: --enable-mini-gmp
+
+For some users, it would be preferable to bundle a private copy of the
+GMP bignum library into Guile.  Some users would like to avoid the extra
+dependency.  Others would like to use libgc to manage GMP values, while
+not perturbing the GMP allocator for other GMP users.
+
+For these cases, Guile now has an --enable-mini-gmp configure option,
+which will use a stripped-down version of GMP, bundled with Guile.  This
+code doesn't have all the algorithmic optimizations of full GMP, but
+implements the same API in a basic way.  It can be more optimal in a
+Guile context, given that it can use libgc to allocate its data.
+
+Note that a build with --enable-mini-gmp is not ABI-compatible with a
+"stock" build, as functions that use GMP types (scm_to_mpz,
+scm_from_mpz) are not exported.
+
+Thanks to Niels Möller and other GMP developers for their mini-gmp
+implementation!
+
+** New `read' implementation in Scheme
+
+Guile's `read' procedure has been rewritten in Scheme.  Compared to the
+C reader (which still exists for bootstrapping reasons), the new
+implementation is more maintainable, more secure, more debuggable, all
+while faithfully reproducing all quirks from Guile's previous reader
+implemented in C.  Also, the Scheme reader is finally compatible with
+suspendable ports, allowing REPL implementations to be built with
+lightweight concurrency packages such as the third-party "Fibers"
+library.  Calls to `read' from Scheme as well as calls to `scm_read'
+from C use the new reader.
+
+The Scheme implementation is currently about 60% as fast as the
+now-inaccessible C implementation, and we hope to close the gap over
+time.  Bug reports very welcome.
+
+** Scheme compiler uses `read-syntax' for better debugging
+
+The new Scheme reader also shares implementation with the new
+`read-syntax' procedure, which annotates each datum with source location
+information.  Guile's compiler can use this to provide better
+source-level debugging for Scheme programs.  Note that this can slightly
+increase compiled file sizes, though this is mitigated by some assembler
+optimizations.
+
+** Syntax objects record source locations
+
+When compiling a file that defines a macro, the output will usually
+include a number of syntax objects as literals.  Previously, these
+literals had no source information; now they do.  This should improve
+debugging.
+
+** Optimized run-time relocations
+
+The code that patches references between statically-allocated Scheme
+data has been optimized to be about 30% shorter than before or so, which
+can significantly decrease compiled file size and run-time
+initialization latency.
+
+** Optimized calls to known functions
+
+For calls where the callee is within the compilation unit, Guile can now
+skip the argument count check.
+
+** Reduce code size for calls to module variables
+
+All calls to a given exported or private variable from a module now
+dispatch through the same trampoline function.  This reduces code size.
+
+** Updated Gnulib
+
+The Gnulib compatibility library has been updated, for the first time
+since 2017 or so.  We expect no functional change but look forward to
+any bug reports.
+
+* New interfaces and functionality
+
+** `call-with-port'
+
+See "Ports" in the manual.
+
+** `call-with-input-bytevector', `call-with-output-bytevector'
+
+See "Bytevector Ports" in the manual.
+
+** `GUILE_EXTENSIONS_PATH' environment variable.
+
+See "Environment Variables" in the manual.
+
+** `mkdtemp' and `mkstemp'
+
+See "File System" in the manual.  There is still `mkstemp!' but we
+recommend that new code uses `mkstemp', which does not mutate the
+contents of the "template" argument string.  Instead for `mkstemp' you
+get the name of the newly-created file by calling `port-filename' on the
+returned port.
+
+** `(system foreign-library)' module
+
+See the newly reorganized "Foreign Function Interface", for details.
+These new interfaces replace `dynamic-link', `dynamic-pointer' and
+similar, which will eventually be deprecated.
+
+** `read-syntax'
+
+See "Annotated Scheme Read" in the manual.
+
+** `quote-syntax'
+
+See "Syntax Case" in the manual.
+
+** `syntax-sourcev'
+
+See "Syntax Transformer Helpers" in the manual.
+
+* Optimizations
+
+** eof-object?
+** R6RS vector-map, vector-for-each
+
+* Bug fixes
+
+** Fix reverse-list->string docstring
+** Fix R7RS "member" result when no item found
+** Fix make-transcoded-port on input+output ports
+** Fix (ice-9 ftw) on filesystems where inode values are meaningless
+** Fix many bugs that prevented Guile from building on MinGW
+** Fix many bugs that prevented Guile from building on MinGW64
+** Fix many bugs that prevented Guile's test suite from running on MinGW
+** Fix srfi-69 merge-hash
+** Fix suspendable-ports implementation of get-bytevector-some!
+** Fix overread in string-locale<?, string-locale-ci<?, and friends
+** Fix handling of parameter lists to elisp defun to allow nil
+** Fix closure-conversion bug for SCC with no free vars and one not-well-known function
+** Fix error when < passed non-real value
+** Fix bug in which exported and private names in a used module could alias each other
+** Fix bug with slot options in redefinable GOOPS classes
+** Fix bugs regarding port buffering for TLS connections in web client
+
+Thanks to Vasilij Schneidermann, Andrey Ivanov, Rob Browning, Erik
+Dominikus, Göran Weinholt, Michael Gran, Andrew Whatson, Ricardo
+G. Herdt, Jan Nieuwenhuizen, David Thompson, and abcdw.
+
+* New deprecations
+
+** `dynamic-unlink'
+
+This function now has no effect; Guile will not unload dynamically
+linked modules, as that can destabilize the system.
+
+* Incompatible changes
+
+** `call-with-output-string' closes port on normal exit
+
+This procedure used to leave the port open, even though there was no
+useful way to access it.  Now we clean it up more promptly, disposing
+any possible associated iconv descriptor.
+
+
+Changes in 3.0.5 (since 3.0.4)
+
+* New interfaces and functionality
+
+** O(1) compilation of `case' and related expressions
+
+Guile now optimizes chains of eq? comparisons to constants, resulting in
+O(1) dispatch time, regardless of the length of the chain.  This
+optimization is also unlocked in many cases for `match' expressions with
+many similar clauses whose first differentiator are constants.
+
+** New (ice-9 copy-tree) module
+
+This module includes the `copy-tree' procedure that was previously
+implemented in C and present in the default `(guile)' module.  See
+"Copying" in the manual.
+
+** New warning: use-before-definition
+
+This analysis, enabled at `-W1', issues warnings for programs that use
+top-level variables before they are defined.
+
+** New warning: non-idempotent-definition
+
+This analysis, enabled at `-W1', issues warnings for programs that whose
+use of a variable is ambiguous.  For example, in the program:
+
+  (define saved-add +)
+  (define + error)
+
+The intention would seem to be to "save" the value of the base `+'
+procedure, then override it locally.  However if this program is ever
+loaded twice, then the second time it is loaded, `+' will be taken from
+the local binding instead of the import.  Users that want this kind of
+behavior should either use lexical bindings instead of top-level
+bindings, or otherwise rename important clobbered bindings via modules.
+
+* New deprecations
+
+** `copy-tree' in the default environment, and `scm_copy_tree' from C
+
+Import the `(ice-9 copy-tree)' module instead.
+
+** `unbound-variable-analysis`, `macro-use-before-definition-analysis`
+
+These bindings from `(language tree-il analyze)' are replaced by the
+use-before-definition analysis, which powers a number of warnings.  Use
+`make-use-before-definition-analysis', but note that these interfaces
+are quite intimate parts of the compiler!
+
+* Incompatible changes
+
+** `copy' read-option removed
+
+This read option would include a copy of the source expression in the
+source-properties of each subexpression.  This option has always been
+off by default and lost most of its use value with the switch to a
+compiler in Guile 2.0.
+
+
+Changes in 3.0.4 (since 3.0.3)
+
+This release fixes the SONAME of libguile-3.0.so, which was erroneously
+bumped in 3.0.3 compared to 3.0.2.  Distributions are strongly
+encouraged to use 3.0.4 instead of 3.0.3.
+
+Thanks to Chris Vine for reporting the issue.
+
+
+Changes in 3.0.3 (since 3.0.2)
+
+* New interfaces and functionality
+
+** New baseline compiler
+
+Guile's CPS-based compiler generates good code, but it takes time and
+memory to do so.  For users that prioritize speed of compilation over
+speed of generated code, Guile now has a new baseline compiler that goes
+directly from the high-level Tree-IL to bytecode, skipping CPS and all
+of its optimizations.  This compiler is used for `guild compile -O0',
+and generally runs around ten times as fast as the CPS compiler.
+
+*** New VM intrinsics to support baseline compiler
+
+See "Intrinsic Call Instructions" in the manual.
+
+*** Compiler support for warning and lowering passes
+*** Compiler support for choosing different compilation orders
+
+See "Compiler Tower" in the manual.  The new per-language "compiler
+chooser" facility can choose different compilers based on optimization
+level.
+
+*** Better support for specifying optimization and warning levels
+
+The procedural compilation interfaces (`compile', `compile-file', and so
+on) now have #:optimization-level and #:warning-level keyword arguments,
+which default to corresponding `default-optimization-level' and
+`default-warning-level' parameters.  You can still specify warning and
+optimization passes manually, but we think most users will find the
+higher-level interfaces more robust to use.
+
+** Faster Guile build from source
+
+Guile now uses the baseline compiler for its bootstrap, when building
+the first Scheme compiler.  Because the baseline compiler runs faster
+and includes less code than the CPS compiler, Guile takes less time to
+build.
+
+** New 'pipeline' procedure in (ice-9 popen)
+
+The 'pipeline' procedure provides a simple way to spawn command pipeline
+as one would do in a shell.
+
+** Refreshed bitvector facility
+
+See "Bit Vectors" in the manual, for more on all of these.
+
+*** New bitvector-count, bitvector-count-bits, bitvector-position
+    procedures
+
+These replace the wonky "bit-count", "bit-count*", and "bit-position"
+procedures.
+
+*** New bitvector-bit-set?, bitvector-bit-clear? procedures
+
+These replace bitvector-ref.  The reason to migrate is that it's an
+opportunity be more efficient in 3.0 (because the new procedures only
+work on true bitvectors, and not generic bit arrays), easier to read (no
+need for 'not' when checking for false bits), and more consistent with
+other bitvector procedures.
+
+*** New bitvector-set-bit!, bitvector-clear-bit! procedures
+
+These replace bitvector-set!, for similar reasons as the bitvector-ref
+replacement above.
+
+*** New bitvector-set-all-bits!, bitvector-clear-all-bits! procedures
+
+These replace bitvector-fill!.
+
+*** New bitvector-flip-all-bits! procedure
+
+This replaces bit-invert!.
+
+*** New bitvector-set-bits!, bitvector-clear-bits! procedures
+
+These replace the wonky "bit-set*!" procedure.
+
+* Bug fixes
+
+** statprof reports the names of primitives
+
+Previously statprof would show strings like "anon #x1234" for primitives
+written in C.
+
+** Compiler reduces 'equal?' when passed a character literal
+
+The compiler now properly reduces expressions such as (equal? c #\x) to
+(eq? c #\x).  This was not the case in 3.0.2, which could lead to slower
+code, especially in 'match' expressions with many clauses with with
+character literals.
+
+** JIT bugs on ARMv7 have been fixed
+   (<https://bugs.gnu.org/40737>,
+    <https://gitlab.com/wingo/lightening/-/issues/12>)
+
+** 'http-get', 'http-post', etc. now honor #:verify-certificates?
+   (<https://bugs.gnu.org/40486>)
+
+** web: Accept URI host names consisting only of hex digits
+   (<https://bugs.gnu.org/40582>)
+
+** (web http) parser recognizes the CONNECT and PATCH methods
+
+** Initial revealed count of file ports is now zero
+   (<https://bugs.gnu.org/41204>)
+
+* New deprecations
+
+** Old bitvector interfaces deprecated
+
+See "Bit Vectors" in the manual, for details on all of these
+replacements.
+
+*** bit-count, bit-position
+
+Use bitvector-count or bitvector-position instead.  
+
+*** bitvector-ref
+
+Use 'bitvector-bit-set?' or 'bitvector-bit-clear?' instead.
+
+*** bitvector-set!
+
+Use 'bitvector-set-bit!' or 'bitvector-clear-bit!' instead.
+
+*** bitvector-fill!
+
+Use 'bitvector-set-all-bits!' or 'bitvector-clear-all-bits!' instead.
+
+*** bit-invert!
+
+Use 'bitvector-flip-all-bits! instead.
+
+*** bit-set*!
+
+Use 'bitvector-set-bits!' or 'bitvector-clear-bits!' instead.
+
+*** bit-count*
+
+Use 'bitvector-count-bits' instead, subtracting from 'bitvector-count'
+on the mask bitvector if you are counting unset bits.
+
+*** Accessing generic arrays using the bitvector procedures
+
+For the same efficiency reasons that use of 'vector-ref' on generic
+arrays was deprecated in Guile 2.0.10, using 'bitvector->list' and
+similar procedures on 1-dimensional boolean-typed arrays is now
+deprecated.  Use 'array-ref' and similar procedures on arrays.
+
+*** scm_istr2bve
+
+This C-only procedure to parse a bitvector from a string should be
+replaced by calling `read' on a string port instead, if needed.
+
+
+Changes in 3.0.2 (since 3.0.1)
+
+* New interfaces and functionality
+
+** New (srfi srfi-171) module
+
+This module implements "tranducers" as specified in
+<https://srfi.schemers.org/srfi-171/srfi-171.html>.
+Thanks to Linus Björnstam for this new API!
+
+** SRFI-14 character data set upgraded to Unicode 13.0.0
+
+* Bug fixes
+
+** Fix heap corruption when allocating structs
+   (<https://bugs.gnu.org/39266>)
+
+This bug would cause random crashes; users are invited to upgrade.
+Thanks to rr (<https://rr-project.org/>) for being instrumental in
+finding this bug!
+
+** Fix race condition between 'abort-to-prompt' and stack marking
+   (<https://bugs.gnu.org/28211>)
+
+This bug could occasionally cause crashes in multi-threaded Guile
+programs using delimited continuations or exceptions.
+
+** Ensure weak sets are occasionally vacuumed
+   (<https://bugs.gnu.org/40194>)
+
+Previously, weak sets, which are used internally for interned symbols
+and for ports with SCM_PORT_TYPE_NEEDS_CLOSE_ON_GC, could grow seemingly
+indefinitely without being vacuumed.
+
+** Interpret dynamic library name as literal file name first
+   (<https://bugs.gnu.org/21076>)
+
+Until now, 'dynamic-link' would always append an extension, such as
+".so", to the user-provided file names.  Now, 'dynamic-link' first tries
+the file name literally, and only then falls back to adding the OS
+shared library file name extension.
+
+This allows users to refer to "libsomething.so.1.2.3" instead of
+"libsomething.so", the latter being usually provided by "-dev" packages
+of GNU/Linux distributions, unlike the former.
+
+** <libguile.h> includes <libguile/hooks.h> again
+
+This fixes an omission in Guile 3.0.
+
+** Fix fixpoint computation in compute-significant-bits
+   (<https://bugs.gnu.org/38486>)
+
+** Fix compilation '--without-threads'
+   (<https://bugs.gnu.org/40075>)
+
+* New deprecations
+
+** 'tmpnam' is now deprecated
+
+The 'tmpnam' function in the C library has been deprecated for years due
+to security concerns; the Scheme procedure 'tmpnam' is now deprecated as
+well, in favor of 'mkstemp!'.  In addition, a new '--disable-tmpnam'
+option has been added to 'configure' for users who would like to disable
+it right away.
+
+
+Changes in 3.0.1 (since 3.0.0):
+
+* New interfaces and functionality
+
+** Export constructor and predicate for '&quit-exception'
+
+The (ice-9 exceptions) module, new in 3.0.0, now exports
+'quit-exception?' and 'make-quit-exception', which is consistent with
+other exception types.
 
 ** (texinfo plain-text) now exports '*line-width*' fluid
 
@@ -16,7 +776,25 @@ The new '*line-width*' fluid allows users to specify the width of a line
 for the purposes of line wrapping.  See "texinfo plain-text" in the
 manual.
 
+** R7RS support recognizes the '.sld' extension
+
+The '.sld' is what the R7RS suggests as a source file name extension.
+It is now recognized when running "guile --r7rs", as well as
+the '.guile.sld' extension.
+
 * Bug fixes
+
+** 'hash' correctly handles keywords, ports, hash tables, etc.
+   (<https://bugs.gnu.org/39634>)
+
+It used to be that the 'hash' procedure would return the same value for
+all keyword objects, the same value for all hash tables, the same value
+for all input ports, etc.
+
+** 'include' no longer rejects relative file names
+
+A bug in 3.0.0 would lead 'include' to error out when passed a relative
+file name.
 
 ** Reduce GC pressure when using bignums
 
@@ -25,43 +803,368 @@ creates.  This significantly improves speed and memory usage on
 applications that make heavy use of bignums, such as the compiler
 itself.
 
-** Fix peval bug that ignored excess arguments
+** Fix expansion of 'error' calls with a non-constant argument
+   (<https://bugs.gnu.org/39509>)
 
-In an expression like:
+Calls to the 'error' primitive with a non-constant argument, as in
+(error message), would be incorrectly expanded by the compiler, leading
+to non-printable errors ("Error while printing exception").
 
-  ((lambda ()
-     (define (add1 n)(+ 1 n))
-     (add1 1 2)))
+** Improve source location information for top-level references
+   (<https://bugs.gnu.org/38388>)
 
-the compiler (specifically 'peval') would silently ignore the excess
-argument to 'add1'.
+Source location information, as is visible upon "unbound variable"
+errors, is now more accurate.
 
-** Respect thread local fluid defaults
+** Web client treats TLS "premature termination" error as EOF
+   (<https://bugs.gnu.org/39800>)
 
-Previously (fluid-ref (make-thread-local-fluid #t)) would return #f.
-This is now fixed.
+This allows 'http-request' from (web client) to gracefully handle
+servers that terminate connections abruptly after responding to a
+"Connection: close" request.
 
-** Fix non-deterministic crash in 'finalization_thread_proc'
-   (<https://bugs.gnu.org/37757>)
+** Fix bug restoring a JIT continuation from the interpreter
+
+** Export C symbols 'scm_sym_lambda', 'scm_sym_quote', etc. again
+
+Those C symbols were inadvertently made private in 3.0.0.
+
+** Fix build on IA64 and on platforms where the stack grows upwards
+
+** Fix JIT compilation on 64-bit Cygwin
+   (<https://bugs.gnu.org/39118>)
 
 ** texinfo properly renders @acronym in plain text
    (<https://bugs.gnu.org/37846>)
 
-** 'scm_port_poll' honors "w" flags
-   (<https://bugs.gnu.org/36709>)
-
-** Do not record LDFLAGS in .pc file
-   (<https://bugs.gnu.org/36339>)
+** Compiler now optimizes (logior 0 INT)
+   (<https://bugs.gnu.org/39573>)
 
 ** Fix Readline configure check for the sake of libedit
 
 This fixes builds on macOS against the system-provided libedit.
 
-** Fix build on platforms where the stack grows upwards
+** Provided 'GUILE_PKG' Autoconf macro now detects Guile 3.0
+   (<https://bugs.gnu.org/39437>)
 
 
 
-Changes in 2.2.6 (since 2.2.5)
+Changes in 3.0.0 (since the stable 2.2 series):
+
+* Notable changes
+
+** Just-in-time code generation
+
+Guile programs now run up to 4 times faster, relative to Guile 2.2,
+thanks to just-in-time (JIT) native code generation.  Notably, this
+brings the performance of "eval" as written in Scheme back to the level
+of "eval" written in C, as in the days of Guile 1.8.
+
+See "Just-In-Time Native Code" in the manual, for more information.  JIT
+compilation will be enabled automatically and transparently.  To disable
+JIT compilation, configure Guile with `--enable-jit=no' or
+`--disable-jit'.  The default is `--enable-jit=auto', which enables the
+JIT if it is available.  See `./configure --help' for more.
+
+JIT compilation is enabled by default on x86-64, i686, ARMv7, and
+AArch64 targets.
+
+** Lower-level bytecode
+
+Relative to the virtual machine in Guile 2.2, Guile's VM instruction set
+is now more low-level.  This allows it to express more advanced
+optimizations, for example type check elision or integer
+devirtualization, and makes the task of JIT code generation easier.
+
+Note that this change can mean that for a given function, the
+corresponding number of instructions in Guile 3.0 may be higher than
+Guile 2.2, which can lead to slowdowns when the function is interpreted.
+We hope that JIT compilation more than makes up for this slight
+slowdown.
+
+** Interleaved internal definitions and expressions allowed
+
+It used to be that internal definitions had to precede all expressions
+in their bodies.  This restriction has been relaxed.  If an expression
+precedes an internal definition, it is treated as if it were a
+definition of an unreferenced variable.  For example, the expression
+`(foo)' transforms to the equivalent of `(define _ (begin (foo) #f))',
+if it precedes other definitions.
+
+This change improves the readability of Guile programs, as it used to be
+that program indentation tended to increase needlessly to allow nested
+`let' and `letrec' to re-establish definition contexts after initial
+expressions, for example for type-checks on procedure arguments.
+
+** Record unification
+
+Guile used to have a number of implementations of structured data types
+in the form of "records": a core facility, SRFI-9 (records), SRFI-35
+(condition types -- a form of records) and R6RS records.  These
+facilities were not compatible, as they all were built in different
+ways.  This had the unfortunate corollary that SRFI-35 conditions were
+not compatible with R6RS conditions.  To fix this problem, we have now
+added the union of functionality from all of these record types into
+core records: single-inheritance subtyping, mutable and immutable
+fields, and so on.  See "Records" in the manual, for full details.
+
+R6RS records, SRFI-9 records, and the SRFI-35 and R6RS exception types
+have been accordingly "rebased" on top of core records.
+
+** Reimplementation of exceptions
+
+Since Guile's origins 25 years ago, `throw' and `catch' have been the
+primary exception-handling primitives.  However these primitives have
+two problems.  One is that it's hard to handle exceptions in a
+structured way using `catch'.  Few people remember what the
+corresponding `key' and `args' are that an exception handler would see
+in response to a call to `error', for example.  In practice, this
+results in more generic catch-all exception handling than one might
+like.
+
+The other problem is that `throw', `catch', and especially
+`with-throw-handler' are quite unlike what the rest of the Scheme world
+uses.  R6RS and R7RS, for example, have mostly converged on
+SRFI-34-style `with-exception-handler' and `raise' primitives, and
+encourage the use of SRFI-35-style structured exception objects to
+describe the error.  Guile's R6RS layer incorporates an adapter between
+`throw'/`catch' and structured exception handling, but it didn't apply
+to SRFI-34/SRFI-35, and we would have to duplicate it for R7RS.
+
+In light of these considerations, Guile has now changed to make
+`with-exception-handler' and `raise-exception' its primitives for
+exception handling and defined a hierarchy of R6RS-style exception types
+in its core.  SRFI-34/35, R6RS, and the exception-handling components of
+SRFI-18 (threads) have been re-implemented in terms of this core
+functionality.  There is also a a compatibility layer that makes it so
+that exceptions originating in `throw' can be handled by
+`with-exception-hander', and vice-versa for `raise-exception' and
+`catch'.
+
+Generally speaking, users will see no difference.  The one significant
+difference is that users of SRFI-34 will see more exceptions flowing
+through their `with-exception-handler'/`guard' forms, because whereas
+before they would only see exceptions thrown by SRFI-34, now they will
+see exceptions thrown by R6RS, R7RS, or indeed `throw'.
+
+Guile's situation is transitional.  Most exceptions are still signalled
+via `throw'.  These will probably migrate over time to
+`raise-exception', while preserving compatibility of course.
+
+See "Exceptions" in the manual, for full details on the new API.
+
+** `guard' no longer unwinds the stack for clause tests
+
+SRFI-34, and then R6RS and R7RS, defines a `guard' form that is a
+shorthand for `with-exception-handler'.  The cond-like clauses for the
+exception handling are specified to run with the continuation of the
+`guard', while any re-propagation of the exception happens with the
+continuation of the original `raise'.
+
+In practice, this means that one needs full `call-with-continuation' to
+implement the specified semantics, to be able to unwind the stack to the
+cond clauses, then rewind if none match.  This is not only quite
+expensive, it is also error-prone as one usually doesn't want to rewind
+dynamic-wind guards in an exceptional situation.  Additionally, as
+continuations bind tightly to the current thread, it makes it impossible
+to migrate a subcomputation with a different thread if a `guard' is live
+on the stack, as is done in Fibers.
+
+Guile now works around these issues by running the test portion of the
+guard expressions within the original `raise' continuation, and only
+unwinding once a test matches.  This is an incompatible semantic change
+but we think the situation is globally much better, and we expect that
+very few people will be affected by the change.
+
+** Optimization of top-level bindings within a compilation unit
+
+At optimization level 2 and above, Guile's compiler is now allowed to
+inline top-level definitions within a compilation unit.  See
+"Declarative Modules" in the manual, for full details.  This change can
+improve the performance of programs with many small top-level
+definitions by quite a bit!
+
+At optimization level 3 and above, Guile will assume that any top-level
+binding in a declarative compilation unit that isn't exported from a
+module can be completely inlined into its uses.  (Prior to this change,
+-O3 was the same as -O2.)  Note that with this new
+`seal-private-bindings' pass, private declarative bindings are no longer
+available for access from the first-class module reflection API.  The
+optimizations afforded by this pass can be useful when you need a speed
+boost, but having them enabled at optimization level 3 means they are
+not on by default, as they change Guile's behavior in ways that users
+might not expect.
+
+** By default, GOOPS classes are not redefinable
+
+It used to be that all GOOPS classes were redefinable, at least in
+theory.  This facility was supported by an indirection in all "struct"
+instances, even though only a subset of structs would need redefinition.
+We wanted to remove this indirection, in order to speed up Guile
+records, allow immutable Guile records to eventually be described by
+classes, and allow for some optimizations in core GOOPS classes that
+shouldn't be redefined anyway.
+
+Thus in GOOPS now there are classes that are redefinable and classes
+that aren't.  By default, classes created with GOOPS are not
+redefinable.  To make a class redefinable, it should be an instance of
+`<redefinable-class>'.  See "Redefining a Class" in the manual for more
+information.
+
+** Define top-level bindings for aux syntax: `else', `=>', `...', `_'
+
+These auxiliary syntax definitions are specified to be defined in the
+R6RS and the R7RS.  They were previously unbound, even in the R6RS
+modules.  This change is not anticipated to cause any incompatibility
+with existing Guile code, and improves things for R6RS and R7RS users.
+
+** Conventional gettext alias is now `G_'
+
+Related to the last point, since the "Fix literal matching for
+module-bound literals" change in the 2.2 series, it was no longer
+possible to use the conventional `_' binding as an alias for `gettext',
+because a local `_' definition would prevent `_' from being recognized
+as auxiliary syntax for `match', `syntax-rules', and similar.  The new
+recommended conventional alias for `gettext' is `G_'.
+
+** Add --r6rs command-line option
+
+The new `install-r6rs!' procedure adapts Guile's defaults to be more
+R6RS-compatible.  This procedure is called if the user passes `--r6rs'
+as a command-line argument.  See "R6RS Incompatibilities" in the manual,
+for full details.
+
+** Add support for R7RS
+
+Thanks to Göran Weinholt and OKUMURA Yuki, Guile now implements the R7RS
+modules.  As the R7RS library syntax is a subset of R6RS, to use R7RS
+you just `(import (scheme base))' and off you go.  As with R6RS also,
+there are some small lexical incompatibilities regarding hex escapes;
+see "R6RS Support" in the manual, for full details.
+
+Also as with R6RS, there is an `install-r7rs!' procedure and a `--r7rs'
+command-line option.
+
+** Add #:re-export-and-replace argument to `define-module'
+
+This new keyword specifies a set of bindings to re-export, but also
+marks them as intended to replace core bindings.  See "Creating Guile
+Modules" in the manual, for full details.
+
+Note to make this change, we had to change the way replacement flags are
+stored, to being associated with modules instead of individual variable
+objects.  This means that users who #:re-export an imported binding that
+was already marked as #:replace by another module will now see warnings,
+as they need to use #:re-export-and-replace instead.
+
+** `define-module' #:autoload no longer pulls in the whole module
+
+One of the ways that a module can use another is "autoloads".  For
+example:
+
+  (define-module (a) #:autoload (b) (make-b))
+
+In this example, module `(b)' will only be imported when the `make-b'
+identifier is referenced.  However besides the imprecision about when a
+given binding is actually referenced, this mechanism used to cause the
+whole imported module to become available, not just the specified
+bindings.  This has now been changed to only import the specified bindings.
+
+This is a backward-incompatible change.  The fix is to mention all
+bindings of interest in the autoload clause.  Feedback is welcome.
+
+** Improve SRFI-43 vector-fill!
+
+SRFI-43 vector-fill! now has the same performance whether an optional
+range is provided or not, and is also provided in core.  As a side
+effect, vector-fill! and vector_fill_x no longer work on non-vector
+rank-1 arrays.  Such cases were handled incorrectly before; for example,
+prior to this change:
+
+  (define a (make-vector 10 'x))
+  (define b (make-shared-array a (lambda (i) (list (* 2 i))) 5))
+  (vector-fill! b 'y)
+
+  => #1(y y y x x)
+
+This is now an error.  Instead, use array-fill!.
+
+** `iota' in core and SRFI-1 `iota' are the same
+
+Previously, `iota' in core would not accept start and step arguments and
+would return an empty list for negative count. Now there is only one
+`iota' function with the extended semantics of SRFI-1.  Note that as an
+incompatible change, core `iota' no longer accepts a negative count.
+
+** Improved Transport Layer Security (TLS) support in (web client)
+
+`http-request', `http-get', and related procedures from (web client) are
+able to access content over TLS ("HTTPS") since Guile 2.2.  However,
+that support lacked important facilities, which are now available.
+
+First, these procedures now have a #:verify-certificate?  parameter to
+enable or disable the verification of X.509 server certificates.  The
+new `x509-certificate-directory' SRFI-39 parameter specifies where X.509
+certificates are searched for.  Second, HTTPS proxies are now supported
+(in addition to HTTP proxies) and the new `current-https-proxy'
+parameter controls that.  See "Web Client" in the manual for details.
+
+* New deprecations
+
+** scm_t_uint8, etc deprecated in favor of C99 stdint.h
+
+It used to be that Guile defined its own `scm_t_uint8' because C99
+`uint8_t' wasn't widely enough available.  Now Guile finally made the
+change to use C99 types, both internally and in Guile's public headers.
+
+Note that this also applies to SCM_T_UINT8_MAX, SCM_T_INT8_MIN, for intN
+and uintN for N in 8, 16, 32, and 64.  Guile also now uses ptrdiff_t
+instead of scm_t_ptrdiff, and similarly for intmax_t, uintmax_t,
+intptr_t, and uintptr_t.
+
+** The two-argument form of `record-constructor'
+
+Calling `record-constructor' with two arguments (the record type and a
+list of field names) is deprecated.  Instead, call with just one
+argument, and provide a wrapper around that constructor if needed.
+
+* Incompatible changes
+
+** All deprecated code removed
+
+All code deprecated in Guile 2.2 has been removed.  See older NEWS, and
+check that your programs can compile without linker warnings and run
+without runtime warnings.  See "Deprecation" in the manual.
+
+In particular, the function `scm_generalized_vector_get_handle' which
+was deprecated in 2.0.9 but remained in 2.2, has now finally been
+removed. As a replacement, use `scm_array_get_handle' to get a handle
+and `scm_array_handle_rank' to check the rank.
+
+** Remove "self" field from vtables and "redefined" field from classes
+
+These fields were used as part of the machinery for class redefinition
+and is no longer needed.
+
+** VM hook manipulation simplified
+
+The low-level mechanism to instrument a running virtual machine for
+debugging and tracing has been simplified.  See "VM Hooks" in the
+manual, for more.
+
+* Changes to the distribution
+
+** New effective version
+
+The "effective version" of Guile is now 3.0, which allows parallel
+installation with other effective versions (for example, the older Guile
+2.2).  See "Parallel Installations" in the manual for full details.
+Notably, the `pkg-config' file is now `guile-3.0', and there are new
+`guile-3' and `guile-3.0' features for `cond-expand'.
+
+
+
+Changes in 2.2.6 (since 2.2.5):
 
 * Bug fixes
 
@@ -136,7 +1239,7 @@ can be found.
 * Miscellaneous improvements
 
 ** Bootstrap optimization
-  
+
 eval.go and psyntax-pp.go are now built before the rest of the .go files
 so that they are processed by a fast macro expander.  This saves time
 when using parallel builds.
