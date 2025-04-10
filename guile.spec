@@ -7,7 +7,7 @@
 #
 Name     : guile
 Version  : 3.0.8
-Release  : 53
+Release  : 54
 URL      : https://mirrors.kernel.org/gnu/guile/guile-3.0.8.tar.xz
 Source0  : https://mirrors.kernel.org/gnu/guile/guile-3.0.8.tar.xz
 Source1  : https://mirrors.kernel.org/gnu/guile/guile-3.0.8.tar.xz.sig
